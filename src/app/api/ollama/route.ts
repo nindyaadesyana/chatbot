@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
+import fs from 'fs/promises';
+import path from 'path';
+
+
 
 interface IBerita {
   id: number
@@ -16,7 +20,7 @@ interface IAcara {
 }
 interface IJadwalAcara {
   id: number
-  acara : string
+  acara: string
   jam_awal: number
   jam_akhir: number
   hari: {
@@ -40,90 +44,51 @@ interface ISeputarDinus {
   deskripsi: string
 }
 
-const tentangTVKU = `
-### [Kata Pengantar]
-Stasiun televisi yang memiliki nilai strategis dalam rangka turut serta dalam mencerdaskan kehidupan bangsa dan memberikan
-alternatif solusi atas berbagai permasalahan di masyarakat melalui program program siaran yang berkualitas dan tepat sasaran. 
-Mengingat, hingga saat ini belum ada program pendidikan yang layak sehingga keberadaan stasiun pendidikan sangat dibutuhkan.
-Kota induk jawa tengah, semarang yang dikenal sebagai kota industri, perdagangan, kelautan, wisata buaya dan pendidikan juga sangat dibutuhkan.
-pada tanggal 13 September 2023, surat keputusan gubernur jawa tengah no. 483/116/2003 telah diperbarui pada tanggal 8 februai 2005 dengan No. 483/12A/2005
-secara resmi mendapatkan izin untuk membangun stasiun televsi pendidikan yang dikelola oleh PT.Televsi Kampus Universitas Dian nuswantoro dikenal dengan TVKU.
+async function getTentangTVKU(): Promise<string> {
+  try {
+    const filePath = path.join(process.cwd(), 'public', 'tentangTVKU.json');
+    const fileContent = await fs.readFile(filePath, 'utf-8');
+    const data = JSON.parse(fileContent);
+    
+    // Format the data for better display in chat
+    let formattedData = `### [Tentang TVKU]\n${data.kataPengantar}\n\n`
+    formattedData += `### [Visi dan Misi]\n**Visi:** ${data.visi}\n**Misi:** ${data.misi}\n\n`
 
-### [Visi dan Misi]
-**Visi:** Menyegarkan bangsa melalui media audio visual  
-**Misi:** Memberikan edukasi melalui media televisi dengan materi edukasi baik teoritis maupun praktis aplikatif kepada masyarakat semarang Jawa Tengah
-khususnya dan warga masyaakat pada ummnya.
+    if (data.rateCard && data.rateCard.length > 0) {
+      formattedData += `### [Rate Card]\n`
+      data.rateCard.forEach((item: any) => {
+        formattedData += `- ${item.acara}: ${item.durasi} (${item.harga})\n`
+      })
+      formattedData += '\n'
+    }
 
-### [Rate Card]
-| ACARA                             | DURASI     | HARGA             |
-|----------------------------------|------------|-------------------|
-| Blocking Time Talkshow           | 60 Menit   | Rp 30.000.000     |
-| Blocking Time Produk             | 60 Menit   | Rp 10.000.000     |
-| Live Event di Luar Studio        | 60 Menit   | Rp 75.000.000     |
-| Biaya Produksi Live Event        | 60 Menit   | Rp 10.000.000     |
-| Produksi TVC                     | 60 Detik   | Rp 45.000.000     |
-| Produksi Company Profile         | 5 Menit    | Rp 65.000.000     |
-| Running Text                     | -          | Rp 300.000        |
-| Liputan Advertorial              | 3 Menit    | Rp 2.500.000      |
-| Liputan Khusus/Tapping (60mnt)   | 60 Menit   | Rp 25.000.000     |
-| Liputan Khusus/Tapping (30mnt)   | 30 Menit   | Rp 20.000.000     |
-| Liputan Khusus/Tapping (15mnt)   | 15 Menit   | Rp 10.000.000     |
-| Penayangan TVC                   | 30 Detik   | Rp 500.000        |
-rmrf
-### [Manajemen]
-TVKU dikelola oleh PT Televisi Kampus Universitas Dian Nuswantoro . Penyaran program akan dilakukan  seara mandiri atau pihak luar tergantung pada
-bobot kualitas yang memenuhi syarat. Pengelolaan siaran dilakukan oleh sumber daya manusia yang profesional dibidangnya, bekerjasama dengan pihak-pihak
-yang berkompeten di bidang penyiarantelevisi. Sumber dana yang digunakan dalam pelaksanaan program aksi dan siaran digali dari lembaga Independen dan iklan.
+  const SOCIAL_MEDIA_MAP: Record<string, string> = {
+     tvku_ig: "https://www.instagram.com/tvku_smg",
+     tvku_yt: "https://www.youtube.com/@TVKU_udinus",
+     tvku_tt: "https://www.tiktok.com/@tvku_smg"
+   };
+  // Di dalam fungsi getTentangTVKU() di route.ts
+  if (data.mediaSosial) {
+    formattedData += `### [Media Sosial]\n`;
+    for (const [platform, code] of Object.entries(data.mediaSosial)) {
+      const url = SOCIAL_MEDIA_MAP[code as keyof typeof SOCIAL_MEDIA_MAP];
+      formattedData += `- [${platform}: ${code}](${url})\n`; 
+      // Output: "- [instagram: tvku_ig](https://www.instagram.com/tvku_smg)"
+    }
+  }
 
-### [Penghargaan TVKU Semarang]
-1. Lembaga Penyiaran Televisi Lokal Terbaik Jawa Tengah (2016, 2018, 2019, 2022, 2023)
-2. Iklan Layanan Masyarakat Terbaik (2019, 2020)
-3. Presenter Wanita Terbaik (2019)
-4. Lifetime Achievement Prof. Ir. Edi Noersasngko, M.Kom (2021)
-5. Markplus Award Industry Marketing Champion (2023)
-
-### [Fasilitas TVKU]
-- Front Office
-- Transit Room
-- Foyer
-- Studio
-- Master Control Room
-- Meeting Room
-- Workplace
-- Dubbing Room
-
-### [Kontak Kerja Sama]
-- Deka  (📞 081 390 245 687)
-- Fitri (📞 081 227 241 195)
-- Bagus (📞 081 228 115 941)
-- Official Digital Marketing: 📱 085 156 471 303
-
-### [Media Sosial TVKU Semarang]
--  [Instagram](https://www.instagram.com/tvku_smg/)
--  [YouTube](https://www.youtube.com/@TVKU_udinus)
--  [TikTok](https://www.tiktok.com/@tvku_smg)
-
-###[Cara Pendaftaran Mahasiswa Udinus]
-
-### [Target Viewers]
-Pemirsa TVKU adalah seluruh lapisan masyarakat yang berdomisili di Semarang dan sekitarnya, penduduk Jawa Tengah pada umumnya yang berusia 10 sampai dengan
-60 tahun, terutama yang ingin menimba ilmu dan pendidikan. Program siaran dirancang untuk semua level, terutama terkait dengan peningkatan pengetahuan tentang progrm tersebut.
-
-TVKU dapat ditonton melalui Digital TV, atau live streaming TVKU Semarang melalui Android. Kini, siaran TVKU menjangkau 12,5 juta penduduk jawa tengah di Kota Semarang, Kota Salatiga,
-Kab. Kendal, Kab. Demak, Kab. Grobokan, Kab. Jepara, Kab. Kudus, Kab. Pati, Kab. Blora, Kab. Temanggung, Magelang, Kota Pekalongan, Kab. Pekalongan, Kab. Sragen, Kab. Batang, 
-Kab. Pemalang, Kab. Karanganyar, Kab. Boyolali dan sekitarnya.
-
-### [Motto dan Objektif]
-**Motto:** Menumbuhkan Ilmu  
-**Objektif:** Meningkatkan kesejahteraan warga dengan meningkatkan pengetahuan teoritis dan ketrampilan praktis dan diterapkan melalui program siaran yang dirancang khusus untuk tujuan itu
-`
-
+    return formattedData;
+  } catch (error) {
+    console.error('Gagal membaca tentangTVKU.json:', error);
+    return '';
+  }
+}
 // Fallback response
 async function getBotResponse(message: string) {
   return {
     type: "bot",
     message: "Maaf, saya belum bisa menjawab pertanyaan itu sekarang."
-  };
+  }
 }
 
 // Fetch + Format Helper
@@ -153,7 +118,8 @@ export async function POST(req: NextRequest) {
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Prompt tidak valid' }, { status: 400 })
     }
-
+    // const filePath = path.join(process.cwd(), 'public','tentangTVKU.json');
+    // const tentangTVKU = await fs.readFile(filePath, 'utf-8');
     const lowerPrompt = prompt.toLowerCase()
 
     const systemPrompt = `Anda adalah Atmin. Aturan:
@@ -163,9 +129,14 @@ export async function POST(req: NextRequest) {
 4. Jika tidak tahu jawabannya, katakan dengan sopan kalau kurang tahu
 5. Jika ada berita terkini, sertakan dalam jawaban
 6. Jawab pertanyaan sesuai dengan apa yang ada di dalam data yang dimiliki
-7. Jangan jawab berdasarkan pengetahuan umum — hanya jawab berdasarkan data yang tersedia.`
+7. Jangan jawab berdasarkan pengetahuan umum — hanya jawab berdasarkan data yang tersedia.
+8. jika pertanyaan hanya sapaan jangan lebih dari 20 kata. 
+9. jika ditanya tentang sosmed, jawab langsung dengan data sosmed`
 
-    let fullPrompt = `${systemPrompt}\n\n${tentangTVKU}\n\nPertanyaan: ${prompt}`
+    
+    
+    
+    let fullPrompt = `${systemPrompt}\n\n${await getTentangTVKU()}\n\nPertanyaan: ${prompt}`;
 
     if (lowerPrompt.includes("berita")) {
       fullPrompt += await fetchAndFormat<IBerita>(
@@ -220,6 +191,7 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await fetch(`http://127.0.0.1:11434/api/generate`, {
+    // const response = await fetch(`http://180.1.0.30:8000/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
