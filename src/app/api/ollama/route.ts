@@ -83,13 +83,6 @@ async function getTentangTVKU(): Promise<string> {
     return '';
   }
 }
-// Fallback response
-async function getBotResponse(message: string) {
-  return {
-    type: "bot",
-    message: "Maaf, saya belum bisa menjawab pertanyaan itu sekarang."
-  }
-}
 
 // Fetch + Format Helper
 async function fetchAndFormat<T>(
@@ -122,7 +115,7 @@ export async function POST(req: NextRequest) {
     // const tentangTVKU = await fs.readFile(filePath, 'utf-8');
     const lowerPrompt = prompt.toLowerCase()
 
-    const systemPrompt = `Anda adalah Atmin. Aturan:
+    const systemPrompt = `Anda adalah Amin. Aturan:
 1. Fokus pada topik berita dan informasi umum
 2. Jangan bahas topik sensitif
 3. Jawab dalam bahasa yang sopan dan informatif
@@ -131,8 +124,14 @@ export async function POST(req: NextRequest) {
 6. Jawab pertanyaan sesuai dengan apa yang ada di dalam data yang dimiliki
 7. Jangan jawab berdasarkan pengetahuan umum — hanya jawab berdasarkan data yang tersedia.
 8. jika pertanyaan hanya sapaan jangan lebih dari 20 kata. 
-9. jika ditanya tentang sosmed, jawab langsung dengan data sosmed`
+10. TVKU's official social media :
+    - Instagram: @tvku_smg (https://instagram.com/tvku_smg)
+    - YouTube: TVKU Universitas Dan Nuswantoro (@TVKU_udinus)
+    - TikTok: @tvku_smg (https://tiktok.com/@tvku_smg)
+    - Website: https://tvku.tv
 
+    ketika ditanya tentang akun media sosial TVKU, selalu berikan informasi yang akurat ini.
+`
     
     
     
