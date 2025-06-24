@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     // const tentangTVKU = await fs.readFile(filePath, 'utf-8');
     const lowerPrompt = prompt.toLowerCase()
 
-    const systemPrompt = `Anda adalah Amin. Aturan:
+    const systemPrompt = `Anda adalah Atmin. Aturan:
 1. Fokus pada topik berita dan informasi umum
 2. Jangan bahas topik sensitif
 3. Jawab dalam bahasa yang sopan dan informatif
@@ -131,6 +131,9 @@ export async function POST(req: NextRequest) {
     - Website: https://tvku.tv
 
     ketika ditanya tentang akun media sosial TVKU, selalu berikan informasi yang akurat ini.
+11. jika ditanya tentang pendaftaran udinus, jangan membahas tentang tvku. jawab jika hanya memiliki link pendaftarannya saja
+12. jika disapa, sapa balik dengan sopan dan tanyakan perlu bantuan apa.
+13. jika ditanya tentang ratecard, selalu berikan dalam bentuk tabel.
 `
     
     
@@ -189,8 +192,8 @@ export async function POST(req: NextRequest) {
       console.log("Full Prompt:\n", fullPrompt)
     }
 
-    const response = await fetch(`http://127.0.0.1:11434/api/generate`, {
-    // const response = await fetch(`http://180.1.0.30:8000/chat`, {
+    //const response = await fetch(`http://127.0.0.1:11434/api/generate`, {
+     const response = await fetch(`https://www.tvku.tv/chat/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -201,6 +204,8 @@ export async function POST(req: NextRequest) {
     })
 
     if (!response.ok) {
+      // console.log(response);
+      
       throw new Error(`Ollama API error: ${response.statusText}`)
     }
 

@@ -133,7 +133,11 @@
   "mediaSosial": {
     "instagram": "tvku_smg",
     "youtube": "TVKU Universitas Dan Nuswantoro",
-    "tiktok": "tvku_smg"
+    "tiktok": "tvku_smg",
+    "website": "tvku.tv"
+  },
+  "mPendaftaran": {
+    "Pendaftaran": "apply.dinus.ac.id"
   },
   "targetViewers": "Pemirsa TVKU adalah seluruh lapisan masyarakat yang berdomisili di Semarang dan sekitarnya, penduduk Jawa Tengah pada umumnya yang berusia 10 sampai dengan 60 tahun, terutama yang ingin menimba ilmu dan pendidikan. Program siaran dirancang untuk semua level, terutama terkait dengan peningkatan pengetahuan tentang program tersebut. TVKU dapat ditonton melalui Digital TV, atau live streaming TVKU Semarang melalui Android. Kini, siaran TVKU menjangkau 12,5 juta penduduk jawa tengah di Kota Semarang, Kota Salatiga, Kab. Kendal, Kab. Demak, Kab. Grobogan, Kab. Jepara, Kab. Kudus, Kab. Pati, Kab. Blora, Kab. Temanggung, Magelang, Kota Pekalongan, Kab. Pekalongan, Kab. Sragen, Kab. Batang, Kab. Pemalang, Kab. Karanganyar, Kab. Boyolali dan sekitarnya.",
   "motto": "Menumbuhkan Ilmu",

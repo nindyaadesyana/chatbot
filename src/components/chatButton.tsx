@@ -133,7 +133,39 @@ const AIMessageContent = ({ message }: { message: string }) => {
     const instagramRegex = /(instagram|ig).*(tvku|akun tvku)/i;
     const youtubeRegex = /(youtube|yt|channel).*(tvku|akun tvku)/i;
     const socialMediaRegex = /(sosial media|media sosial|sosmed).*(tvku)/i;
-    
+
+    //pendaftaran udinus
+    const pendaftaranRegex = /(pendaftaran|daftar|registrasi).*(udinus|dinus|universitas dian nuswantoro)/i;
+
+    //create pendaftaran respons component if any patterns match
+    if (pendaftaranRegex.test(message)) {
+      return (
+        <div className="space-y-4">
+          {/* Pesan asli */}
+          <p>{message}</p>
+
+          {/* Info Pendaftaran UDINUS */}
+          <div className="mt-4 space-y-2 p-3 bg-blue-50 rounded-md">
+            <p className="font-medium">Informasi Pendaftaran UDINUS:</p>
+            <div className="flex flex-col space-y-2">
+              {/* Website PMB */}
+              <a 
+                href="https://apply.dinus.ac.id/pendaftaran/M01736" 
+                className="text-blue-600 hover:underline flex items-center"
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                </svg>
+                Website PMB UDINUS: apply.dinus.ac.id
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Create social media response component if any patterns match
     if (instagramRegex.test(message) || youtubeRegex.test(message) || socialMediaRegex.test(message)) {
       return (
