@@ -52,14 +52,14 @@ function parseRateCard(message: string): RateCardItem[] {
   try {
     const data = JSON.parse(message)
     if (Array.isArray(data.rateCard)) {
-      return data.rateCard.map((item: any) => ({
+      return data.rateCard.map((item: any) => ({ //eslint-disable-line
         acara: item.acara || 'N/A',
         durasi: item.durasi || 'N/A',
         harga: item.harga || 'N/A'
       }))
     }
     if (Array.isArray(data)) {
-      return data.map((item: any) => ({
+      return data.map((item: any) => ({ //eslint-disable-line
         acara: item.acara || 'N/A',
         durasi: item.durasi || 'N/A',
         harga: item.harga || 'N/A'
@@ -253,7 +253,7 @@ export function ChatButton() {
   
   
   const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<any>(null) //eslint-disable-line
   const startSoundRef = useRef<HTMLAudioElement | null>(null)
   const stopSoundRef = useRef<HTMLAudioElement | null>(null)
   const hasResultRef = useRef(false);
@@ -344,7 +344,7 @@ export function ChatButton() {
     }
 
     
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: any) => { //eslint-disable-line
       hasResultRef.current = true
       const transcript = event.results[0][0].transcript
       
@@ -352,7 +352,7 @@ export function ChatButton() {
     }
 
     
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: any) => { //eslint-disable-line
       console.error("Speech recognition error:", event.error)
       let errorMessage = "Terjadi kesalahan dalam pengenalan suara"
        switch(event.error) {
@@ -436,14 +436,14 @@ export function ChatButton() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <Image
-                    src="/images/bahlil.jpeg"
-                    alt="LIL BAH AI"
+                    src="/images/DiraProfilePicture.jpeg"
+                    alt="Dira"
                     width={40}
                     height={40}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <DialogTitle className="text-2xl font-bold">LIL BAH AI</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">Dira</DialogTitle>
               </div>
               <Button
                 variant="ghost"
@@ -459,7 +459,7 @@ export function ChatButton() {
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               {messages.length === 0 && !isLoading && (
                 <div className="flex justify-center items-center h-full text-gray-500">
-                  Start a conversation with LIL BAH AI
+                  Start a conversation with Dira
                 </div>
               )}
 

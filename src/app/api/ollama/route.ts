@@ -56,7 +56,7 @@ async function getTentangTVKU(): Promise<string> {
 
     if (data.rateCard && data.rateCard.length > 0) {
       formattedData += `### [Rate Card]\n`
-      data.rateCard.forEach((item: any) => {
+      data.rateCard.forEach((item: any) => { //eslint-disable-line
         formattedData += `- ${item.acara}: ${item.durasi} (${item.harga})\n`
       })
       formattedData += '\n'
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     // const tentangTVKU = await fs.readFile(filePath, 'utf-8');
     const lowerPrompt = prompt.toLowerCase()
 
-    const systemPrompt = `Anda adalah Atmin. Aturan:
+    const systemPrompt = `Anda adalah Dira, Aturan:
 1. Fokus pada topik berita dan informasi umum
 2. Jangan bahas topik sensitif
 3. Jawab dalam bahasa yang sopan dan informatif
