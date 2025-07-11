@@ -12,6 +12,7 @@ interface IBerita {
   kategori: {
     nama: string
   }
+  waktu_publish : string 
 }
 interface IAcara {
   id: number
@@ -43,6 +44,12 @@ interface ISeputarDinus {
   teks: string
   deskripsi: string
 }
+interface IRateCard {
+  acara: string
+  durasi: string
+  harga: string
+}
+
 
 async function getTentangTVKU(): Promise<string> {
   try {
@@ -55,11 +62,14 @@ async function getTentangTVKU(): Promise<string> {
     formattedData += `### [Visi dan Misi]\n**Visi:** ${data.visi}\n**Misi:** ${data.misi}\n\n`
 
     if (data.rateCard && data.rateCard.length > 0) {
-      formattedData += `### [Rate Card]\n`
-      data.rateCard.forEach((item: any) => { //eslint-disable-line
-        formattedData += `- ${item.acara}: ${item.durasi} (${item.harga})\n`
-      })
-      formattedData += '\n'
+      formattedData += `### [Rate Card]\n`;
+
+      const rateCards: IRateCard[] = data.rateCard; 
+      rateCards.forEach((item: IRateCard) => {
+        formattedData += `- ${item.acara}: ${item.durasi} (${item.harga})\n`;
+      });
+
+      formattedData += '\n';
     }
 
   const SOCIAL_MEDIA_MAP: Record<string, string> = {
@@ -67,13 +77,12 @@ async function getTentangTVKU(): Promise<string> {
      tvku_yt: "https://www.youtube.com/@TVKU_udinus",
      tvku_tt: "https://www.tiktok.com/@tvku_smg"
    };
-  // Di dalam fungsi getTentangTVKU() di route.ts
+
   if (data.mediaSosial) {
     formattedData += `### [Media Sosial]\n`;
     for (const [platform, code] of Object.entries(data.mediaSosial)) {
       const url = SOCIAL_MEDIA_MAP[code as keyof typeof SOCIAL_MEDIA_MAP];
       formattedData += `- [${platform}: ${code}](${url})\n`; 
-      // Output: "- [instagram: tvku_ig](https://www.instagram.com/tvku_smg)"
     }
   }
 
@@ -84,7 +93,6 @@ async function getTentangTVKU(): Promise<string> {
   }
 }
 
-// Fetch + Format Helper
 async function fetchAndFormat<T>(
   url: string,
   mapFn: (item: T) => string,
@@ -111,11 +119,19 @@ export async function POST(req: NextRequest) {
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Prompt tidak valid' }, { status: 400 })
     }
-    // const filePath = path.join(process.cwd(), 'public','tentangTVKU.json');
-    // const tentangTVKU = await fs.readFile(filePath, 'utf-8');
-    const lowerPrompt = prompt.toLowerCase()
+    
+    const lowerPrompt = prompt.toLowerCase().trim()
 
-    const systemPrompt = `Anda adalah Dira, Aturan:
+    // Jika hanya sapaan, langsung kembalikan respons tanpa lanjut ke LLaMA
+    const sapaanKeywords = ['halo', 'hi', 'hai', 'assalamualaikum', 'pagi', 'siang', 'sore', 'malam']
+    if (sapaanKeywords.some(word => lowerPrompt === word || lowerPrompt.includes(word))) {
+      return NextResponse.json({
+        response: `Halo, Sahabat TVKU! Aku Dira, asisten virtual berbasis kecerdasan buatan milik TVKU. Tugasku adalah membantu memberikan informasi seputar TVKU — mulai dari jadwal acara, detail program unggulan, berita terbaru, hingga panduan seputar layanan TVKU. Aku siap menemani kamu kapan saja untuk menjawab pertanyaan dan membantumu menjelajahi semua yang ditawarkan TVKU.`
+      })
+    }
+
+
+    const systemPrompt = `Anda adalah Dira, Asisten virtual TVKU.Aturan:
 1. Fokus pada topik berita dan informasi umum
 2. Jangan bahas topik sensitif
 3. Jawab dalam bahasa yang sopan dan informatif
@@ -123,17 +139,16 @@ export async function POST(req: NextRequest) {
 5. Jika ada berita terkini, sertakan dalam jawaban
 6. Jawab pertanyaan sesuai dengan apa yang ada di dalam data yang dimiliki
 7. Jangan jawab berdasarkan pengetahuan umum — hanya jawab berdasarkan data yang tersedia.
-8. jika pertanyaan hanya sapaan jangan lebih dari 20 kata. 
-10. TVKU's official social media :
-    - Instagram: @tvku_smg (https://instagram.com/tvku_smg)
+8. Jawab pertanyaan sesuai dengan data yang tersedia. Jika tidak tahu, katakan dengan sopan.
+9. TVKU's official social media :
+    - Instagram: @tvku_smg
     - YouTube: TVKU Universitas Dan Nuswantoro (@TVKU_udinus)
-    - TikTok: @tvku_smg (https://tiktok.com/@tvku_smg)
+    - TikTok: @tvku_smg 
     - Website: https://tvku.tv
 
     ketika ditanya tentang akun media sosial TVKU, selalu berikan informasi yang akurat ini.
-11. jika ditanya tentang pendaftaran udinus, jangan membahas tentang tvku. jawab jika hanya memiliki link pendaftarannya saja
-12. jika disapa, sapa balik dengan sopan dan tanyakan perlu bantuan apa.
-13. jika ditanya tentang ratecard, selalu berikan dalam bentuk tabel.
+10. jika ditanya tentang pendaftaran udinus, jangan membahas tentang tvku. jawab jika hanya memiliki link pendaftarannya saja
+11. jika ditanya tentang ratecard, selalu berikan dalam bentuk tabel.
 `
     
     
@@ -141,12 +156,21 @@ export async function POST(req: NextRequest) {
     let fullPrompt = `${systemPrompt}\n\n${await getTentangTVKU()}\n\nPertanyaan: ${prompt}`;
 
     if (lowerPrompt.includes("berita")) {
-      fullPrompt += await fetchAndFormat<IBerita>(
-        'https://apidev.tvku.tv/api/berita',
-        item => `• **${item.judul}** (${item.kategori?.nama ?? 'Uncategorized'}) - ${item.deskripsi}`,
-        'Berita Terkini'
+      const res = await axios.get('https://apidev.tvku.tv/api/berita')
+      const data: IBerita[] = res.data.data
+
+      // Urutkan berdasarkan tanggal terbaru
+      const sorted = data.sort((a: IBerita, b: IBerita) => 
+        new Date(b.waktu_publish).getTime() - new Date(a.waktu_publish).getTime()
       )
+
+      const formatted = sorted.map(item =>
+        `• **${item.judul}** (${item.kategori?.nama ?? 'Uncategorized'}) - ${item.deskripsi}`
+      ).join('\n')
+
+      fullPrompt += `\n\n### [Berita Terkini]\n${formatted}`
     }
+
 
     if (lowerPrompt.includes("acara")) {
       fullPrompt += await fetchAndFormat<IAcara>(
