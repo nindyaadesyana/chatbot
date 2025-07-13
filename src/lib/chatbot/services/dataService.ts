@@ -30,11 +30,13 @@ export class DataService {
         new Date(b.waktu_publish).getTime() - new Date(a.waktu_publish).getTime()
       );
 
-      const formatted = sorted.map(item =>
-        `• **${item.judul}** (${item.kategori?.nama ?? 'Uncategorized'}) - ${item.deskripsi}`
-      ).join('\n');
+      const formatted = sorted.slice(0, 5).map((item, index) => {
+        // Remove HTML tags from description
+        const cleanDescription = item.deskripsi.replace(/<[^>]*>/g, '').trim();
+        return `${index + 1}. **${item.judul}**\n   Kategori: ${item.kategori?.nama ?? 'Umum'}\n   Deskripsi: ${cleanDescription}\n   Waktu: ${new Date(item.waktu_publish).toLocaleDateString('id-ID')}\n`;
+      }).join('\n');
 
-      return `\n\n### [Berita Terkini]\n${formatted}`;
+      return `\n\n### [Berita Terkini TVKU]\n${formatted}`;
     } catch (error) {
       console.error('Gagal mengambil berita:', error);
       return '';

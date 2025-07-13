@@ -6,6 +6,7 @@ import { NewsHeader } from "@/components/newsHeader";
 import { OurExpertise } from "@/components/ourExpertise";
 import { Program } from "@/components/program";
 import Schedule from "@/components/schedule";
+import ClientHomePage from "@/components/clientHomePage";
 
 interface Inewsdata {
   id: number;
@@ -91,6 +92,7 @@ export default async function HomePage() {
           </div>
         </div>
       </div>
+      <ClientHomePage />
     </div>
   );
 }

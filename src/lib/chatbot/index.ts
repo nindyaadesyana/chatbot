@@ -14,6 +14,11 @@ export class ChatbotService {
       return ResponseHandler.getGreetingResponse();
     }
 
+    // Cek apakah thank you
+    if (ResponseHandler.isThankYou(prompt)) {
+      return ResponseHandler.getThankYouResponse();
+    }
+
     // Build prompt dengan data yang relevan
     const promptBuilder = new PromptBuilder(prompt);
     const fullPrompt = await promptBuilder.build();

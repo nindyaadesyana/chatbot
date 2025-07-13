@@ -13,15 +13,25 @@ export class PromptBuilder {
   async build(): Promise<string> {
     let fullPrompt = `${this.systemPrompt}\n\n${await TVKUService.getTentangTVKU()}\n\nPertanyaan: ${this.prompt}`;
 
-    if (this.prompt.includes("berita")) {
-      fullPrompt += await DataService.getBerita();
+    console.log('User prompt:', this.prompt);
+
+    // Improved keyword detection
+    const newsKeywords = ['berita', 'news', 'kabar', 'informasi', 'terbaru', 'hari ini'];
+    const eventKeywords = ['acara', 'event', 'kegiatan'];
+    const scheduleKeywords = ['jadwal', 'schedule', 'jam'];
+    
+    if (newsKeywords.some(keyword => this.prompt.includes(keyword))) {
+      console.log('Fetching berita...');
+      const beritaData = await DataService.getBerita();
+      console.log('Berita data:', beritaData);
+      fullPrompt += beritaData;
     }
 
-    if (this.prompt.includes("acara")) {
+    if (eventKeywords.some(keyword => this.prompt.includes(keyword))) {
       fullPrompt += await DataService.getAcara();
     }
 
-    if (this.prompt.includes("jadwal acara")) {
+    if (scheduleKeywords.some(keyword => this.prompt.includes(keyword))) {
       fullPrompt += await DataService.getJadwalAcara();
     }
 
@@ -37,6 +47,7 @@ export class PromptBuilder {
       fullPrompt += await DataService.getSeputarDinus();
     }
 
+    console.log('Full prompt length:', fullPrompt.length);
     return fullPrompt;
   }
 }

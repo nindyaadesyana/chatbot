@@ -301,11 +301,49 @@ export function ChatButton() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
 
       const data = await res.json()
+      const aiResponse = data.response || "Maaf, saya tidak bisa menjawab pertanyaan itu."
+      const speechText = data.speech || aiResponse
+      
       const aiMessage: ChatMessage = { 
         sender: "ai", 
-        message: data.response || "Maaf, saya tidak bisa menjawab pertanyaan itu." 
+        message: aiResponse
       }
       setMessages((prev) => [...prev, aiMessage])
+      
+      // Add TTS - speak the response
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(speechText)
+        const voices = speechSynthesis.getVoices()
+        
+        // Prioritize better Indonesian voices
+        const preferredVoices = [
+          'Google Bahasa Indonesia',
+          'Microsoft Andika - Indonesian (Indonesia)',
+          'Indonesian Indonesia'
+        ]
+        
+        let selectedVoice = null
+        for (const preferred of preferredVoices) {
+          selectedVoice = voices.find(voice => voice.name.includes(preferred.split(' ')[0]))
+          if (selectedVoice) break
+        }
+        
+        // Fallback to any Indonesian voice
+        if (!selectedVoice) {
+          selectedVoice = voices.find(voice => voice.lang === 'id-ID')
+        }
+        
+        if (selectedVoice) {
+          utterance.voice = selectedVoice
+          console.log('Using voice:', selectedVoice.name)
+        }
+        
+        utterance.rate = 1.3
+        utterance.pitch = 1.1 // Slightly higher pitch for younger sound
+        utterance.lang = 'id-ID'
+        speechSynthesis.speak(utterance)
+        console.log('TTS: Speaking response')
+      }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "Unknown error"
       setMessages(prev => [...prev, { 
