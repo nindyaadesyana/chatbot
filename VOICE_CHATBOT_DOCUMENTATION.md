@@ -588,9 +588,14 @@ speechSynthesis.getVoices().forEach(voice =>
 
 ---
 
+## 👥 Contributors
+
+**Developed by**: [akbarlion](https://github.com/akbarlion) as collaborator
+
 ## 📞 Support
 
 Untuk pertanyaan teknis atau bug reports, hubungi development team atau buat issue di repository.
 
 **Last Updated**: January 2025
 **Version**: 1.0.0
+**Collaborator**: [@akbarlion](https://github.com/akbarlion)
