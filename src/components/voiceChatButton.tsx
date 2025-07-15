@@ -20,7 +20,7 @@ export default function VoiceChatButton({ onVoiceInput, onResponse }: VoiceChatB
   const [isListening, setIsListening] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+
 
   const addMessage = (type: 'user' | 'bot', text: string) => {
     setMessages(prev => [...prev, { type, text, timestamp: new Date() }]);
@@ -48,7 +48,6 @@ export default function VoiceChatButton({ onVoiceInput, onResponse }: VoiceChatB
           onVoiceInput?.(text);
           
           // Show processing state
-          setIsProcessing(true);
           addMessage('bot', 'Sedang memproses...');
           
           // Send to chatbot
@@ -83,8 +82,6 @@ export default function VoiceChatButton({ onVoiceInput, onResponse }: VoiceChatB
             
             // Speak error message too
             SpeechService.speak(errorMessage);
-          } finally {
-            setIsProcessing(false);
           }
         },
         (error) => {
