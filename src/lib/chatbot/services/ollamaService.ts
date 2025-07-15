@@ -34,6 +34,10 @@ export class OllamaService {
         return this.generateFallbackNewsResponse(prompt);
       }
       
+      if (prompt.includes('Rate Card')) {
+        return this.generateFallbackRateCardResponse(prompt);
+      }
+      
       // General fallback
       return 'Maaf, sistem AI sedang mengalami gangguan. Tapi saya tetap bisa membantu dengan informasi TVKU. Silakan tanya tentang berita, jadwal acara, atau informasi lainnya.';
     }
@@ -43,6 +47,14 @@ export class OllamaService {
     const newsSection = prompt.match(/### \[Berita Terkini TVKU\][\s\S]*/);
     if (newsSection) {
       return `Halo! Berikut adalah berita terkini dari TVKU. ${newsSection[0].replace(/###|\*\*/g, '')} Ada yang ingin ditanyakan lebih lanjut tentang berita-berita ini?`;
+    }
+    return 'Maaf, sistem sedang mengalami gangguan. Silakan coba lagi nanti.';
+  }
+
+  private static generateFallbackRateCardResponse(prompt: string): string {
+    const rateCardSection = prompt.match(/### \[Rate Card\][\s\S]*?(?=###|$)/);
+    if (rateCardSection) {
+      return `Berikut adalah Rate Card TVKU:\n\n${rateCardSection[0].replace(/###|\[|\]/g, '')}\n\nUntuk informasi lebih lanjut atau konsultasi, silakan hubungi tim marketing TVKU. Ada yang ingin ditanyakan tentang layanan iklan kami?`;
     }
     return 'Maaf, sistem sedang mengalami gangguan. Silakan coba lagi nanti.';
   }

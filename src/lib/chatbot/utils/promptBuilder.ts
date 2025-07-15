@@ -19,6 +19,7 @@ export class PromptBuilder {
     const newsKeywords = ['berita', 'news', 'kabar', 'informasi', 'terbaru', 'hari ini'];
     const eventKeywords = ['acara', 'event', 'kegiatan'];
     const scheduleKeywords = ['jadwal', 'schedule', 'jam'];
+    const rateCardKeywords = ['rate card', 'ratecard', 'harga', 'tarif', 'biaya', 'iklan', 'price'];
     
     if (newsKeywords.some(keyword => this.prompt.includes(keyword))) {
       console.log('Fetching berita...');
@@ -45,6 +46,12 @@ export class PromptBuilder {
 
     if (this.prompt.includes("seputar dinus")) {
       fullPrompt += await DataService.getSeputarDinus();
+    }
+
+    // Rate card specific enhancement
+    if (rateCardKeywords.some(keyword => this.prompt.includes(keyword))) {
+      console.log('Rate card query detected');
+      fullPrompt += '\n\nCATATAN: User menanyakan tentang rate card/harga. Pastikan untuk menampilkan rate card dalam format tabel yang jelas dan mudah dibaca.';
     }
 
     console.log('Full prompt length:', fullPrompt.length);
