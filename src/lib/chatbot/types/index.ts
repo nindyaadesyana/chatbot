@@ -11,7 +11,7 @@ export interface IBerita {
 export interface IAcara {
   id: number
   acara: string
-  deskription: string
+  deskripsi: string
 }
 
 export interface IJadwalAcara {
@@ -32,9 +32,9 @@ export interface IOurProgram {
 }
 
 export interface IProgramAcara {
-  id: number
-  judul: string
-  deskripsi: string
+  id_program: number;
+  judul: string;
+  deskripsi: string;
 }
 
 export interface ISeputarDinus {

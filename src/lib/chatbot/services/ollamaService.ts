@@ -29,16 +29,28 @@ export class OllamaService {
     } catch (error) {
       console.error('Error calling Ollama API:', error);
       
-      // Fallback responses
-      if (prompt.includes('Berita Terkini TVKU')) {
-        return this.generateFallbackNewsResponse(prompt);
+      // Fallback responses: coba tampilkan data yang sudah ada di prompt
+      const fallbackSections = [
+        { label: 'Berita Terkini TVKU', regex: /### \[Berita Terkini TVKU\][\s\S]*?(?=###|$)/ },
+        { label: 'Acara Terkini', regex: /### \[Acara Terkini\][\s\S]*?(?=###|$)/ },
+        { label: 'Jadwal Acara Terkini', regex: /### \[Jadwal Acara Terkini\][\s\S]*?(?=###|$)/ },
+        { label: 'Our Programs', regex: /### \[Our Programs\][\s\S]*?(?=###|$)/ },
+        // Lebih fleksibel: cocokkan label program acara apapun
+        { label: 'Program Acara', regex: /### \[Program Acara.*?\][\s\S]*?(?=###|$)/ },
+        { label: 'Seputar Dinus', regex: /### \[Seputar Dinus\][\s\S]*?(?=###|$)/ },
+        { label: 'Rate Card', regex: /### \[Rate Card\][\s\S]*?(?=###|$)/ },
+      ];
+      let foundSection = '';
+      for (const section of fallbackSections) {
+        const match = prompt.match(section.regex);
+        if (match && match[0].trim().length > 0) {
+          foundSection += `\n\n${match[0].replace(/###/g, '').trim()}`;
+        }
       }
-      
-      if (prompt.includes('Rate Card')) {
-        return this.generateFallbackRateCardResponse(prompt);
+      if (foundSection) {
+        return `Berikut data TVKU yang berhasil diambil:${foundSection}\n\nJika ingin bertanya lebih lanjut, silakan ketik pertanyaan lain.`;
       }
-      
-      // General fallback
+      // Jika tidak ada data sama sekali
       return 'Maaf, sistem AI sedang mengalami gangguan. Tapi saya tetap bisa membantu dengan informasi TVKU. Silakan tanya tentang berita, jadwal acara, atau informasi lainnya.';
     }
   }

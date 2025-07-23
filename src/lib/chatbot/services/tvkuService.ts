@@ -18,14 +18,7 @@ export class TVKUService {
       let formattedData = `### [Tentang TVKU]\n${data.kataPengantar}\n\n`;
       formattedData += `### [Visi dan Misi]\n**Visi:** ${data.visi}\n**Misi:** ${data.misi}\n\n`;
 
-      if (data.rateCard && data.rateCard.length > 0) {
-        formattedData += `### [Rate Card]\n`;
-        const rateCards: IRateCard[] = data.rateCard; 
-        rateCards.forEach((item: IRateCard) => {
-          formattedData += `- ${item.acara}: ${item.durasi} (${item.harga})\n`;
-        });
-        formattedData += '\n';
-      }
+      // Rate card section akan ditambahkan di promptBuilder jika memang diminta user
 
       if (data.mediaSosial) {
         formattedData += `### [Media Sosial]\n`;

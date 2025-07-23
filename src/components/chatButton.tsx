@@ -40,26 +40,33 @@ const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
 
 
 function isRateCardResponse(message: string): boolean {
-  return (
-    /rate.?card|harga|price|acara|durasi/i.test(message) || 
-    /acara.*harga|harga.*acara/i.test(message) ||
-    /acara\s*[|:-]\s*durasi\s*[|:-]\s*harga/i.test(message)
-  )
+  // Hanya return true jika ada kata "rate card"/"ratecard" ATAU format tabel rate card yang sangat spesifik
+  const hasRateCardKeyword = /rate.?card/i.test(message);
+  // Cek header tabel rate card yang umum
+  const hasRateCardTableHeader = /acara\s*[|:-]\s*durasi\s*[|:-]\s*harga/i.test(message) ||
+    /\bAcara\b.*\bDurasi\b.*\bHarga\b/i.test(message);
+  // Jangan hanya berdasarkan kata "harga" saja
+  return hasRateCardKeyword || hasRateCardTableHeader;
 }
 
 
 function parseRateCard(message: string): RateCardItem[] {
+  // Hanya parsing jika ada header tabel rate card
+  const hasHeader = /acara\s*[|:-]\s*durasi\s*[|:-]\s*harga/i.test(message) ||
+    /\bAcara\b.*\bDurasi\b.*\bHarga\b/i.test(message);
+  if (!hasHeader) return [];
+
   try {
     const data = JSON.parse(message)
     if (Array.isArray(data.rateCard)) {
-      return data.rateCard.map((item: any) => ({ //eslint-disable-line
+      return data.rateCard.map((item: any) => ({
         acara: item.acara || 'N/A',
         durasi: item.durasi || 'N/A',
         harga: item.harga || 'N/A'
       }))
     }
     if (Array.isArray(data)) {
-      return data.map((item: any) => ({ //eslint-disable-line
+      return data.map((item: any) => ({
         acara: item.acara || 'N/A',
         durasi: item.durasi || 'N/A',
         harga: item.harga || 'N/A'
@@ -67,31 +74,31 @@ function parseRateCard(message: string): RateCardItem[] {
     }
   } catch {}
 
-  const items: RateCardItem[] = []
-  const lines = message.split('\n')
+  const items: RateCardItem[] = [];
+  const lines = message.split('\n');
 
   for (const line of lines) {
-    const pipeParts = line.split('|').map(part => part.trim()).filter(Boolean)
+    const pipeParts = line.split('|').map(part => part.trim()).filter(Boolean);
     if (pipeParts.length >= 3) {
       items.push({
         acara: pipeParts[0],
         durasi: pipeParts[1],
         harga: pipeParts[2]
-      })
-      continue
+      });
+      continue;
     }
 
-    const bulletMatch = line.match(/[-*]\s*(.+?):\s*(.+?)\s*\((.+?)\)/i)
+    const bulletMatch = line.match(/[-*]\s*(.+?):\s*(.+?)\s*\((.+?)\)/i);
     if (bulletMatch) {
       items.push({
         acara: bulletMatch[1],
         durasi: bulletMatch[2],
         harga: bulletMatch[3]
-      })
+      });
     }
   }
 
-  return items
+  return items;
 }
 
 
@@ -250,10 +257,15 @@ export function ChatButton() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [typingText, setTypingText] = useState("Thinking")
-  
-  
+
+  // Speech recognition support detection
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  // Safari detection
+  const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
   const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<any>(null) //eslint-disable-line
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const startSoundRef = useRef<HTMLAudioElement | null>(null)
   const stopSoundRef = useRef<HTMLAudioElement | null>(null)
   const hasResultRef = useRef(false);
@@ -261,12 +273,17 @@ export function ChatButton() {
  
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Deteksi support speech recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // Sembunyikan mic jika Safari
+      setIsSpeechSupported(!!SpeechRecognition && !isSafari);
+
       startSoundRef.current = new Audio("/sounds/start.mp3")
       stopSoundRef.current = new Audio("/sounds/stop.mp3")
       startSoundRef.current.load()
       stopSoundRef.current.load()
     }
-  }, [])
+  }, [isSafari])
 
 
   useEffect(() => {
@@ -310,39 +327,34 @@ export function ChatButton() {
       }
       setMessages((prev) => [...prev, aiMessage])
       
-      // Add TTS - speak the response
+      // Add TTS - speak the response (lock voice selection for consistency)
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(speechText)
-        const voices = speechSynthesis.getVoices()
-        
-        // Prioritize better Indonesian voices
-        const preferredVoices = [
-          'Google Bahasa Indonesia',
-          'Microsoft Andika - Indonesian (Indonesia)',
-          'Indonesian Indonesia'
-        ]
-        
-        let selectedVoice = null
-        for (const preferred of preferredVoices) {
-          selectedVoice = voices.find(voice => voice.name.includes(preferred.split(' ')[0]))
-          if (selectedVoice) break
+        // Use a property on window to store the selected voice so it doesn't change every time
+        const w = window as Window & typeof globalThis & { _tvkuSelectedVoice?: SpeechSynthesisVoice };
+        if (!w._tvkuSelectedVoice) {
+          const voices = speechSynthesis.getVoices();
+          // Prioritize Google Bahasa Indonesia
+          let selectedVoice = voices.find(v => v.name === 'Google Bahasa Indonesia' && v.lang === 'id-ID');
+          if (!selectedVoice) {
+            // Fallback to any Indonesian voice
+            selectedVoice = voices.find(v => v.lang === 'id-ID');
+          }
+          if (!selectedVoice) {
+            // Fallback to first available voice
+            selectedVoice = voices[0];
+          }
+          w._tvkuSelectedVoice = selectedVoice;
         }
-        
-        // Fallback to any Indonesian voice
-        if (!selectedVoice) {
-          selectedVoice = voices.find(voice => voice.lang === 'id-ID')
+        if (w._tvkuSelectedVoice) {
+          utterance.voice = w._tvkuSelectedVoice;
+          utterance.lang = w._tvkuSelectedVoice.lang;
+          console.log('Using locked voice:', w._tvkuSelectedVoice.name);
         }
-        
-        if (selectedVoice) {
-          utterance.voice = selectedVoice
-          console.log('Using voice:', selectedVoice.name)
-        }
-        
-        utterance.rate = 1.3
-        utterance.pitch = 1.1 // Slightly higher pitch for younger sound
-        utterance.lang = 'id-ID'
-        speechSynthesis.speak(utterance)
-        console.log('TTS: Speaking response')
+        utterance.rate = 1.3;
+        utterance.pitch = 1.1; // Slightly higher pitch for younger sound
+        speechSynthesis.speak(utterance);
+        console.log('TTS: Speaking response');
       }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "Unknown error"
@@ -382,32 +394,34 @@ export function ChatButton() {
     }
 
     
-    recognition.onresult = (event: any) => { //eslint-disable-line
-      hasResultRef.current = true
-      const transcript = event.results[0][0].transcript
-      
-      submitMessage(transcript)
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      hasResultRef.current = true;
+      const transcript = event.results[0][0].transcript;
+      submitMessage(transcript);
     }
 
     
-    recognition.onerror = (event: any) => { //eslint-disable-line
-      console.error("Speech recognition error:", event.error)
-      let errorMessage = "Terjadi kesalahan dalam pengenalan suara"
-       switch(event.error) {
-         case 'no-speech':
-           errorMessage = "Tidak mendeteksi suara. Pastikan mikrofon berfungsi dan coba lagi."
-           break
-         case 'audio-capture':
-           errorMessage = "Tidak bisa mengakses mikrofon. Mohon berikan izin mikrofon."
-           break
-         case 'not-allowed':
-           errorMessage = "Akses mikrofon ditolak. Mohon berikan izin mikrofon."
-           break
-       }
-       setMessages(prev => [...prev, {
-         sender: "ai",
-         message: errorMessage
-       }])
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("Speech recognition error:", event.error);
+      let errorMessage = "Terjadi kesalahan dalam pengenalan suara";
+      switch(event.error) {
+        case 'no-speech':
+          errorMessage = "Tidak mendeteksi suara. Pastikan mikrofon berfungsi dan coba lagi.";
+          break;
+        case 'audio-capture':
+          errorMessage = isSafari
+            ? "Browser Safari tidak mendukung fitur input suara atau akses mikrofon gagal. Silakan gunakan browser lain seperti Chrome untuk fitur ini."
+            : "Tidak bisa mengakses mikrofon. Mohon berikan izin mikrofon.";
+          break;
+        case 'not-allowed':
+          errorMessage = "Akses mikrofon ditolak. Mohon berikan izin mikrofon.";
+          break;
+      }
+      setSpeechError(errorMessage);
+      setMessages(prev => [...prev, {
+        sender: "ai",
+        message: errorMessage
+      }]);
     }
     
    
@@ -507,7 +521,7 @@ export function ChatButton() {
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-message-appear`}
                 >
                   <div
-                    className={`whitespace-pre-line max-w-[80%] p-3 rounded-2xl ${
+                    className={`whitespace-pre-line break-words max-w-full md:max-w-[80%] p-3 rounded-2xl overflow-x-auto ${
                       msg.sender === "user" 
                         ? "bg-blue-500 text-white" 
                         : "bg-gray-100 text-gray-800"
@@ -546,27 +560,29 @@ export function ChatButton() {
                   disabled={isLoading}
                 />
 
-                <div className="relative">
-                  <Button
-                    type="button"
-                    size="icon"
-                    onClick={handleVoiceInput}
-                    className={`rounded-full h-12 w-12 transition-colors duration-300 ${
-                      isListening ? "bg-red-600 animate-pulse" : "bg-gray-300 hover:bg-gray-400"
-                    }`}
-                    aria-label="Voice input"
-                  >
-                    <Mic className="h-5 w-5 text-white" />
-                  </Button>
+                {isSpeechSupported && (
+                  <div className="relative">
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={handleVoiceInput}
+                      className={`rounded-full h-12 w-12 transition-colors duration-300 ${
+                        isListening ? "bg-red-600 animate-pulse" : "bg-gray-300 hover:bg-gray-400"
+                      }`}
+                      aria-label="Voice input"
+                    >
+                      <Mic className="h-5 w-5 text-white" />
+                    </Button>
 
-                  {isListening && (
-                    <>
-                      <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none" />
-                      <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none delay-200" />
-                      <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none delay-400" />
-                    </>
-                  )}
-                </div>
+                    {isListening && (
+                      <>
+                        <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none" />
+                        <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none delay-200" />
+                        <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none delay-400" />
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <Button
                   type="submit"
@@ -578,6 +594,16 @@ export function ChatButton() {
                   <Send className="h-5 w-5" />
                 </Button>
               </form>
+              {!isSpeechSupported && (
+                <div className="text-xs text-gray-400 mt-2">
+                  {isSafari
+                    ? "Browser Safari tidak mendukung fitur input suara. Silakan gunakan browser lain seperti Chrome untuk fitur ini."
+                    : "Browser Anda tidak mendukung input suara. Silakan ketik pesan."}
+                </div>
+              )}
+              {speechError && (
+                <div className="text-xs text-red-500 mt-2">{speechError}</div>
+              )}
             </div>
           </div>
         </DialogContent>

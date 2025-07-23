@@ -1,11 +1,19 @@
 "use client";
 
+
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import { useEffect, useState } from "react";
 import axios from "axios";
-// import img1 from "../../public/images/bahlil.jpeg";
 import "swiper/css";
+
+// Interface for program data
+interface Iprogram {
+  id: number;
+  thumbnail: string;
+  judul: string;
+  deskripsi: string;
+}
 
 
 
@@ -16,38 +24,58 @@ function truncateWords(text: string, limit: number) {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
+
 export default function TVProgramUI() {
   const [program, setProgram] = useState<Iprogram[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
+  // Set isMounted after mount
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Fetch programs after mount
+  useEffect(() => {
+    if (!isMounted) return;
     const fetchPrograms = async () => {
       try {
         const response = await axios.get<{ data: Iprogram[] }>(
           `${BASE_URL}/our-programs`
         );
+        if (!response.data || !Array.isArray(response.data.data)) {
+          throw new Error("Invalid data format from server");
+        }
         setProgram(response.data.data);
       } catch (err) {
         let errorMessage = "Failed to load programs";
-
         if (axios.isAxiosError(err)) {
           if (err.code === "ECONNABORTED") {
             errorMessage = "Request timeout. Please try again.";
           } else if (!err.response) {
             errorMessage = "Network error. Please check your connection.";
+          } else if (err.response.status === 404) {
+            errorMessage = "Programs not found (404).";
+          } else if (err.response.status >= 500) {
+            errorMessage = "Server error. Please try again later.";
           } else {
             errorMessage = err.response.data?.message || err.message;
           }
         } else if (err instanceof Error) {
           errorMessage = err.message;
+        } else {
+          errorMessage = "An unknown error occurred.";
         }
-
         setError(errorMessage);
         console.error("API Error:", err);
       }
     };
     fetchPrograms();
-  }, []);
+  }, [isMounted]);
+
+  if (!isMounted) {
+    return null;
+  }
 
   if (error) {
     return (
@@ -62,6 +90,20 @@ export default function TVProgramUI() {
             Try Again
           </button>
         </div>
+        <div className="mt-2 text-xs text-gray-500">
+          <p>
+            {error.includes("Invalid data format") &&
+              "Mohon pastikan API mengembalikan data array dengan field yang benar (id, thumbnail, judul, deskripsi)."}
+            {error.includes("Network error") &&
+              "Periksa koneksi internet Anda."}
+            {error.includes("timeout") &&
+              "Permintaan ke server melebihi waktu tunggu. Coba lagi."}
+            {error.includes("404") &&
+              "Data program tidak ditemukan."}
+            {error.includes("Server error") &&
+              "Terjadi masalah pada server. Silakan coba beberapa saat lagi."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -69,8 +111,8 @@ export default function TVProgramUI() {
   return (
     <div className="max-w-7xl mx-auto pt-28 pb-24 px-4 py-6 ">
       <Swiper slidesPerView={1} loop={true} modules={[Autoplay]}>
-        {program.map((data, index) => (
-          <SwiperSlide key={index}>
+        {program.map((data) => (
+          <SwiperSlide key={data.id}>
             <div
               className="h-96 rounded-2xl overflow-hidden bg-cover bg-center relative"
               style={{ backgroundImage: `url(${data.thumbnail})` }}
@@ -85,8 +127,8 @@ export default function TVProgramUI() {
 
       <h3 className="text-xl font-semibold mt-10 mb-4">Program TVKU</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {program.map((data, index) => (
-          <div key={index} className="relative group">
+        {program.map((data) => (
+          <div key={data.id} className="relative group">
             <div
               className="h-40 rounded-xl overflow-hidden bg-cover bg-center relative"
               style={{ backgroundImage: `url(${data.thumbnail})` }}

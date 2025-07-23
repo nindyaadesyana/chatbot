@@ -20,6 +20,7 @@ export class PromptBuilder {
     const eventKeywords = ['acara', 'event', 'kegiatan'];
     const scheduleKeywords = ['jadwal', 'schedule', 'jam'];
     const rateCardKeywords = ['rate card', 'ratecard', 'harga', 'tarif', 'biaya', 'iklan', 'price'];
+    const programKeywords = ['program', 'program acara', 'program tvku', 'our programs'];
     
     if (newsKeywords.some(keyword => this.prompt.includes(keyword))) {
       console.log('Fetching berita...');
@@ -28,19 +29,11 @@ export class PromptBuilder {
       fullPrompt += beritaData;
     }
 
-    if (eventKeywords.some(keyword => this.prompt.includes(keyword))) {
-      fullPrompt += await DataService.getAcara();
-    }
-
     if (scheduleKeywords.some(keyword => this.prompt.includes(keyword))) {
       fullPrompt += await DataService.getJadwalAcara();
     }
 
-    if (this.prompt.includes("our programs")) {
-      fullPrompt += await DataService.getOurPrograms();
-    }
-
-    if (this.prompt.includes("program acara")) {
+    if (programKeywords.some(keyword => this.prompt.includes(keyword))) {
       fullPrompt += await DataService.getProgramAcara();
     }
 
@@ -48,10 +41,29 @@ export class PromptBuilder {
       fullPrompt += await DataService.getSeputarDinus();
     }
 
-    // Rate card specific enhancement
-    if (rateCardKeywords.some(keyword => this.prompt.includes(keyword))) {
-      console.log('Rate card query detected');
-      fullPrompt += '\n\nCATATAN: User menanyakan tentang rate card/harga. Pastikan untuk menampilkan rate card dalam format tabel yang jelas dan mudah dibaca.';
+    // Rate card section hanya akan ditambahkan jika memang diminta user
+    if (
+      rateCardKeywords.some(keyword => this.prompt.includes(keyword)) &&
+      !programKeywords.some(keyword => this.prompt.includes(keyword)) &&
+      !/program(\s|\b)/.test(this.prompt)
+    ) {
+      // Ambil ulang tentangTVKU.json hanya untuk rate card
+      try {
+        const filePath = require('path').join(process.cwd(), 'public', 'tentangTVKU.json');
+        const fileContent = require('fs').readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(fileContent);
+        if (data.rateCard && data.rateCard.length > 0) {
+          let rateCardSection = `\n\n### [Rate Card]\n`;
+          // Tampilkan dalam bentuk tabel markdown
+          rateCardSection += `| Acara | Durasi | Harga |\n|-------|--------|--------|\n`;
+          data.rateCard.forEach((item: any) => {
+            rateCardSection += `| ${item.acara} | ${item.durasi} | ${item.harga} |\n`;
+          });
+          fullPrompt += rateCardSection + '\n';
+        }
+      } catch (e) {
+        console.error('Gagal mengambil rate card:', e);
+      }
     }
 
     console.log('Full prompt length:', fullPrompt.length);
