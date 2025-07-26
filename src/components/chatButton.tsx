@@ -257,33 +257,33 @@ export function ChatButton() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [typingText, setTypingText] = useState("Thinking")
-
-  // Speech recognition support detection
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-  const [speechError, setSpeechError] = useState<string | null>(null);
-  // Safari detection
-  const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
+  
+  
   const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false)
+  const [isSafari, setIsSafari] = useState(false)
+  const recognitionRef = useRef<any>(null) //eslint-disable-line
   const startSoundRef = useRef<HTMLAudioElement | null>(null)
   const stopSoundRef = useRef<HTMLAudioElement | null>(null)
   const hasResultRef = useRef(false);
 
- 
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Deteksi support speech recognition
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      // Sembunyikan mic jika Safari
-      setIsSpeechSupported(!!SpeechRecognition && !isSafari);
-
       startSoundRef.current = new Audio("/sounds/start.mp3")
       stopSoundRef.current = new Audio("/sounds/stop.mp3")
       startSoundRef.current.load()
       stopSoundRef.current.load()
+
+      // SpeechRecognition support detection
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      // Safari detection
+      const ua = window.navigator.userAgent
+      const isSafariBrowser = /^((?!chrome|android).)*safari/i.test(ua)
+      setIsSafari(isSafariBrowser)
+      setIsSpeechSupported(!!SpeechRecognition && !isSafariBrowser)
     }
-  }, [isSafari])
+  }, [])
 
 
   useEffect(() => {
@@ -374,59 +374,50 @@ export function ChatButton() {
   }
 
   
+
   useEffect(() => {
+    if (!isSpeechSupported) return
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      console.error("Browser Anda tidak mendukung Web Speech API.")
-      return
-    }
+    if (!SpeechRecognition) return
 
     const recognition = new SpeechRecognition()
     recognition.continuous = false
     recognition.interimResults = false
     recognition.lang = "id-ID"
 
-    // Saat mulai mendengarkan...
     recognition.onstart = () => {
       hasResultRef.current = false
       setIsListening(true)
       startSoundRef.current?.play().catch(e => console.error("Error memainkan suara start:", e))
     }
 
-    
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      hasResultRef.current = true;
-      const transcript = event.results[0][0].transcript;
-      submitMessage(transcript);
+    recognition.onresult = (event: any) => { //eslint-disable-line
+      hasResultRef.current = true
+      const transcript = event.results[0][0].transcript
+      submitMessage(transcript)
     }
 
-    
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", event.error);
-      let errorMessage = "Terjadi kesalahan dalam pengenalan suara";
+    recognition.onerror = (event: any) => { //eslint-disable-line
+      console.error("Speech recognition error:", event.error)
+      let errorMessage = "Terjadi kesalahan dalam pengenalan suara"
       switch(event.error) {
         case 'no-speech':
-          errorMessage = "Tidak mendeteksi suara. Pastikan mikrofon berfungsi dan coba lagi.";
-          break;
+          errorMessage = "Tidak mendeteksi suara. Pastikan mikrofon berfungsi dan coba lagi."
+          break
         case 'audio-capture':
-          errorMessage = isSafari
-            ? "Browser Safari tidak mendukung fitur input suara atau akses mikrofon gagal. Silakan gunakan browser lain seperti Chrome untuk fitur ini."
-            : "Tidak bisa mengakses mikrofon. Mohon berikan izin mikrofon.";
-          break;
+          errorMessage = "Tidak bisa mengakses mikrofon. Mohon berikan izin mikrofon."
+          break
         case 'not-allowed':
-          errorMessage = "Akses mikrofon ditolak. Mohon berikan izin mikrofon.";
-          break;
+          errorMessage = "Akses mikrofon ditolak. Mohon berikan izin mikrofon."
+          break
       }
-      setSpeechError(errorMessage);
       setMessages(prev => [...prev, {
         sender: "ai",
         message: errorMessage
-      }]);
+      }])
     }
-    
-   
+
     recognition.onend = () => {
-      
       if (!hasResultRef.current) {
         stopSoundRef.current?.play().catch(e => console.error("Error memainkan suara stop:", e))
       }
@@ -434,32 +425,35 @@ export function ChatButton() {
     }
 
     recognitionRef.current = recognition
-    
-    
     return () => {
       recognition.abort()
     }
-  }, [submitMessage]) 
+  }, [isSpeechSupported, submitMessage])
 
 
   const handleVoiceInput = async () => {
+    if (!isSpeechSupported) {
+      if (isSafari) {
+        setMessages(prev => [...prev, {
+          sender: "ai",
+          message: "Maaf, fitur pengenalan suara tidak tersedia di Safari. Silakan gunakan browser lain seperti Chrome atau Edge."
+        }])
+      } else {
+        alert("Fitur pengenalan suara tidak tersedia di browser ini.")
+      }
+      return
+    }
     if (isListening) {
       recognitionRef.current?.stop()
       return
     }
-
     if (!recognitionRef.current) {
       alert("Fitur pengenalan suara tidak tersedia di browser ini.")
       return
     }
-    
     try {
-      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      
       stream.getTracks().forEach(track => track.stop())
-      
-      
       recognitionRef.current.start()
     } catch (err) {
       console.error("Izin mikrofon ditolak:", err)
@@ -560,7 +554,8 @@ export function ChatButton() {
                   disabled={isLoading}
                 />
 
-                {isSpeechSupported && (
+                {/* Mic button only if supported and not Safari */}
+                {isSpeechSupported && !isSafari && (
                   <div className="relative">
                     <Button
                       type="button"
@@ -573,7 +568,6 @@ export function ChatButton() {
                     >
                       <Mic className="h-5 w-5 text-white" />
                     </Button>
-
                     {isListening && (
                       <>
                         <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping pointer-events-none" />
@@ -582,6 +576,11 @@ export function ChatButton() {
                       </>
                     )}
                   </div>
+                )}
+                {/* Info for unsupported browsers */}
+                {/* ...existing code... */}
+                {!isSpeechSupported && (
+                  <></>
                 )}
 
                 <Button
@@ -594,17 +593,16 @@ export function ChatButton() {
                   <Send className="h-5 w-5" />
                 </Button>
               </form>
-              {!isSpeechSupported && (
-                <div className="text-xs text-gray-400 mt-2">
-                  {isSafari
-                    ? "Browser Safari tidak mendukung fitur input suara. Silakan gunakan browser lain seperti Chrome untuk fitur ini."
-                    : "Browser Anda tidak mendukung input suara. Silakan ketik pesan."}
-                </div>
-              )}
-              {speechError && (
-                <div className="text-xs text-red-500 mt-2">{speechError}</div>
-              )}
             </div>
+            {/* Info for unsupported browsers - below chat box */}
+            {!isSpeechSupported && (
+              <div className="w-full flex justify-center items-center">
+                <div className="inline-block rounded-md bg-gray-100 px-3 py-2 text-xs text-black-600 shadow-sm mt-1 mb-0 text-center border border-gray-200">
+                  <span className="font-medium">Browser Anda tidak mendukung voice note.</span><br />
+                  <span className="text-[11px]">Silakan gunakan browser lain.</span>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
