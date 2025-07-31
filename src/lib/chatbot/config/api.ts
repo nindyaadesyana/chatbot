@@ -8,7 +8,7 @@ export const API_ENDPOINTS = {
 };
 
 export const OLLAMA_CONFIG = {
-  // URL: 'http://127.0.0.1:11434/api/generate',
-  URL: 'https://www.tvku.tv/chat/',
-  MODEL: 'llama3.2'
+  // Untuk HuggingFace Gemma 2B
+  URL: 'https://api-inference.huggingface.co/models/google/gemma-2b',
+  MODEL: 'gemma-2b'
 };
