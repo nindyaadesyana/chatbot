@@ -1,6 +1,8 @@
+// src/lib/chatbot/utils/promptBuilder.ts
 import { SYSTEM_PROMPT } from '../config/prompts';
 import { DataService } from '../services/dataService';
 import { TVKUService } from '../services/tvkuService';
+// import { PDFService } from '../services/pdfService'; // <-- PDF Service dimatikan sementara
 
 export class PromptBuilder {
   private prompt: string = '';
@@ -11,22 +13,27 @@ export class PromptBuilder {
   }
 
   async build(): Promise<string> {
-    let fullPrompt = `${this.systemPrompt}\n\n${await TVKUService.getTentangTVKU()}\n\nPertanyaan: ${this.prompt}`;
+    // --- BAGIAN PDF DIMATIKAN SEMENTARA UNTUK PENGUJIAN ---
+    // const [tentangTVKU, pdfContent] = await Promise.all([
+    //   TVKUService.getTentangTVKU(),
+    //   PDFService.getPDFContent()
+    // ]);
+    const tentangTVKU = await TVKUService.getTentangTVKU(); // Hanya mengambil data dari JSON
+
+    // let fullPrompt = `${this.systemPrompt}\n\n${tentangTVKU}\n${pdfContent}\n\nPertanyaan: ${this.prompt}`;
+    let fullPrompt = `${this.systemPrompt}\n\n${tentangTVKU}\n\nPertanyaan: ${this.prompt}`; // Prompt tanpa data PDF
+    // --- AKHIR BAGIAN PENGUJIAN ---
 
     console.log('User prompt:', this.prompt);
 
-    // Improved keyword detection
     const newsKeywords = ['berita', 'news', 'kabar', 'informasi', 'terbaru', 'hari ini'];
-    const eventKeywords = ['acara', 'event', 'kegiatan'];
     const scheduleKeywords = ['jadwal', 'schedule', 'jam'];
-    const rateCardKeywords = ['rate card', 'ratecard', 'harga', 'tarif', 'biaya', 'iklan', 'price'];
     const programKeywords = ['program', 'program acara', 'program tvku', 'our programs'];
-    
+    const rateCardKeywords = ['rate card', 'ratecard', 'harga', 'tarif', 'biaya', 'iklan', 'price'];
+
     if (newsKeywords.some(keyword => this.prompt.includes(keyword))) {
       console.log('Fetching berita...');
-      const beritaData = await DataService.getBerita();
-      console.log('Berita data:', beritaData);
-      fullPrompt += beritaData;
+      fullPrompt += await DataService.getBerita();
     }
 
     if (scheduleKeywords.some(keyword => this.prompt.includes(keyword))) {
@@ -41,32 +48,28 @@ export class PromptBuilder {
       fullPrompt += await DataService.getSeputarDinus();
     }
 
-    // Rate card section hanya akan ditambahkan jika memang diminta user
     if (
       rateCardKeywords.some(keyword => this.prompt.includes(keyword)) &&
-      !programKeywords.some(keyword => this.prompt.includes(keyword)) &&
-      !/program(\s|\b)/.test(this.prompt)
+      !programKeywords.some(keyword => this.prompt.includes(keyword))
     ) {
-      // Ambil ulang tentangTVKU.json hanya untuk rate card
       try {
         const filePath = require('path').join(process.cwd(), 'public', 'tentangTVKU.json');
         const fileContent = require('fs').readFileSync(filePath, 'utf-8');
         const data = JSON.parse(fileContent);
         if (data.rateCard && data.rateCard.length > 0) {
           let rateCardSection = `\n\n### [Rate Card]\n`;
-          // Tampilkan dalam bentuk tabel markdown
           rateCardSection += `| Acara | Durasi | Harga |\n|-------|--------|--------|\n`;
           data.rateCard.forEach((item: any) => {
             rateCardSection += `| ${item.acara} | ${item.durasi} | ${item.harga} |\n`;
           });
-          fullPrompt += rateCardSection + '\n';
+          fullPrompt += rateCardSection;
         }
       } catch (e) {
-        console.error('Gagal mengambil rate card:', e);
+        console.error('Gagal mengambil data rate card secara eksplisit:', e);
       }
     }
 
-    console.log('Full prompt length:', fullPrompt.length);
+    console.log('Final prompt length:', fullPrompt.length);
     return fullPrompt;
   }
 }
