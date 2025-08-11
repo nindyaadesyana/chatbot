@@ -1,39 +1,55 @@
+// src/lib/chatbot/index.ts
+
+// Impor semua yang kita butuhkan
 import { ResponseHandler } from './utils/responseHandler';
 import { PromptBuilder } from './utils/promptBuilder';
 import { OllamaService } from './services/ollamaService';
+import { askWithRAG } from './services/langchainService'; // <-- Impor layanan RAG kita
 
 export class ChatbotService {
   static async processMessage(prompt: string): Promise<string> {
-    // Validasi input
+    // 1. Validasi input dan sapaan (tetap sama)
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('Prompt tidak valid');
     }
-
-    // Cek apakah greeting
     if (ResponseHandler.isGreeting(prompt)) {
       return ResponseHandler.getGreetingResponse();
     }
-
-    // Cek apakah thank you
     if (ResponseHandler.isThankYou(prompt)) {
       return ResponseHandler.getThankYouResponse();
     }
 
-    // Build prompt dengan data yang relevan
-    const promptBuilder = new PromptBuilder(prompt);
-    const fullPrompt = await promptBuilder.build();
+    // 2. Logika Pengatur Lalu Lintas
+    const isAskingForDynamicData = /berita|news|jadwal|acara|program/i.test(prompt);
 
-    // Debug log untuk development
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Full Prompt:\n", fullPrompt);
+    if (isAskingForDynamicData) {
+      // --- JALUR LAMA (NON-RAG) ---
+      // Untuk pertanyaan yang bisa dijawab oleh API dinamis
+      console.log("-> Menggunakan alur PromptBuilder untuk data dinamis.");
+
+      const promptBuilder = new PromptBuilder(prompt);
+      const fullPrompt = await promptBuilder.build();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Full Prompt (Non-RAG):\n", fullPrompt);
+      }
+
+      return await OllamaService.generateResponse(fullPrompt);
+    } 
+    
+    else {
+      // --- JALUR BARU (RAG) ---
+      // Untuk semua pertanyaan umum lainnya, gunakan RAG dari PDF.
+      console.log("-> Menggunakan alur RAG untuk pertanyaan umum.");
+      
+      // Langsung panggil layanan RAG.
+      // Fungsi askWithRAG sudah mencakup proses mencari dokumen DAN bertanya ke Ollama.
+      return await askWithRAG(prompt);
     }
-
-    // Generate response dari Ollama
-    return await OllamaService.generateResponse(fullPrompt);
   }
 }
 
-// Export semua service untuk fleksibilitas
+// Ekspor semua service lain jika masih diperlukan di tempat lain
 export * from './services/dataService';
 export * from './services/tvkuService';
 export * from './services/ollamaService';

@@ -475,7 +475,7 @@ console.log('API Response:', response);
 ```bash
 # .env.local
 NEXT_PUBLIC_API_BASE_URL=https://apidev.tvku.tv
-OLLAMA_API_URL=https://www.tvku.tv/chat/
+OLLAMA_API_URL=
 DEBUG_MODE=true
 ```
 
