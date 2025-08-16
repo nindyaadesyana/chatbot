@@ -8,7 +8,8 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 
 // --- GANTI DENGAN URL OLLAMA TVKU ---
-const TVKU_OLLAMA_CHAT_URL = "https://www.tvku.tv/chat/"; // <-- GANTI INI!
+// const TVKU_OLLAMA_CHAT_URL = "https://www.tvku.tv/chat/"; 
+const TVKU_OLLAMA_CHAT_URL = "https://www.tvku.tv/chat/"; 
 
 const chatModel = new ChatOllama({
   baseUrl: TVKU_OLLAMA_CHAT_URL,

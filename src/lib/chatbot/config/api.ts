@@ -9,7 +9,7 @@ export const API_ENDPOINTS = {
 
 export const OLLAMA_CONFIG = {
   // Untuk Ollama lokal/server
-  URL: 'https://www.tvku.tv/chat/',
-  //URL: 'http://localhost:11434',
+  //URL: 'https://www.tvku.tv/chat/',
+  URL: 'http://localhost:11434',
   MODEL: 'llama3'
 };

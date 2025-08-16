@@ -6,9 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ingest": "tsx scripts/ingest.ts"
   },
   "dependencies": {
+    "@chroma-core/default-embed": "^0.1.8",
     "@langchain/community": "^0.3.49",
     "@langchain/core": "^0.3.66",
     "@langchain/ollama": "^0.2.3",
@@ -23,7 +25,7 @@
     "axios": "^1.9.0",
     "cheerio": "^1.0.0",
     "chromadb": "^3.0.10",
-    "class-variance-authority": "^0.7.1",
+    "class-variance-authority": "0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
@@ -45,7 +47,7 @@
     "swiper": "^11.2.6",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.12",
-    "tailwindcss-animate": "^1.0.7",
+    "tailwindcss-animate": "1.0.7",
     "tsx": "^4.20.3"
   },
   "devDependencies": {
