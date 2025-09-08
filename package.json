@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "npx tsx scripts/ingest.ts",
+    "ingest:enhanced": "npx tsx scripts/enhancedIngest.ts"
   },
   "dependencies": {
     "@chroma-core/default-embed": "^0.1.8",
@@ -36,6 +37,8 @@
     "next": "^15.2.0",
     "ollama": "^0.5.15",
     "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^3.2.0",
     "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -48,6 +51,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.12",
     "tailwindcss-animate": "1.0.7",
+    "tesseract.js": "^5.0.5",
     "tsx": "^4.20.3"
   },
   "devDependencies": {

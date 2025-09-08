@@ -327,34 +327,85 @@ export function ChatButton() {
       }
       setMessages((prev) => [...prev, aiMessage])
       
-      // Add TTS - speak the response (lock voice selection for consistency)
+      // Add TTS with Indonesian female voice (stop any ongoing speech first)
       if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(speechText)
-        // Use a property on window to store the selected voice so it doesn't change every time
-        const w = window as Window & typeof globalThis & { _tvkuSelectedVoice?: SpeechSynthesisVoice };
-        if (!w._tvkuSelectedVoice) {
-          const voices = speechSynthesis.getVoices();
-          // Prioritize Google Bahasa Indonesia
-          let selectedVoice = voices.find(v => v.name === 'Google Bahasa Indonesia' && v.lang === 'id-ID');
-          if (!selectedVoice) {
-            // Fallback to any Indonesian voice
-            selectedVoice = voices.find(v => v.lang === 'id-ID');
-          }
-          if (!selectedVoice) {
-            // Fallback to first available voice
-            selectedVoice = voices[0];
-          }
-          w._tvkuSelectedVoice = selectedVoice;
+        // Stop any ongoing speech to prevent overlap
+        speechSynthesis.cancel();
+        
+        // Create summary for TTS (always read full but summarized)
+        let ttsText = speechText;
+        
+        // Clean and summarize text for TTS
+        ttsText = ttsText
+          .replace(/\*\*/g, '') // Remove bold markdown
+          .replace(/\*/g, '')   // Remove italic markdown
+          .replace(/#{1,6}\s/g, '') // Remove headers
+          .replace(/\|[^\n]*\|/g, '') // Remove table rows
+          .replace(/[-=]{3,}/g, '') // Remove separators
+          .replace(/\n{2,}/g, '. ') // Replace multiple newlines with period
+          .replace(/\n/g, '. ')     // Replace single newlines with period
+          .trim();
+        
+        // Special handling for introduction text - always read full
+        const isIntroduction = ttsText.includes('Halo, Sahabat TVKU') || 
+                              ttsText.includes('Aku Dira') ||
+                              ttsText.includes('asisten virtual');
+        
+        // Read all content but make it concise and natural for TTS
+        if (!isIntroduction) {
+          // Clean up for TTS while keeping all important information
+          ttsText = ttsText
+            .replace(/\*\*/g, '') // Remove bold markdown
+            .replace(/\*/g, '')   // Remove italic markdown
+            .replace(/#{1,6}\s/g, '') // Remove headers
+            .replace(/\|[^\n]*\|/g, '') // Remove table rows
+            .replace(/[-=]{3,}/g, '') // Remove separators
+            .replace(/\{[^}]*\}/g, '') // Remove JSON objects
+            .replace(/\[[^\]]*\]/g, '') // Remove arrays
+            .replace(/\n{2,}/g, '. ') // Replace multiple newlines with period
+            .replace(/\n/g, '. ')     // Replace single newlines with period
+            .replace(/\s+/g, ' ')     // Clean multiple spaces
+            .replace(/\b(BERITA|PROGRAM|JADWAL)\s*(HARI INI|TERAKHIR|TVKU)?:?\s*/gi, '') // Remove headers
+            .replace(/created_at|updated_at|id_\w+/gi, '') // Remove technical terms
+            .trim();
         }
-        if (w._tvkuSelectedVoice) {
-          utterance.voice = w._tvkuSelectedVoice;
-          utterance.lang = w._tvkuSelectedVoice.lang;
-          console.log('Using locked voice:', w._tvkuSelectedVoice.name);
-        }
-        utterance.rate = 1.3;
-        utterance.pitch = 1.1; // Slightly higher pitch for younger sound
-        speechSynthesis.speak(utterance);
-        console.log('TTS: Speaking response');
+        
+        const utterance = new SpeechSynthesisUtterance(ttsText);
+          
+          const setVoice = () => {
+            const voices = speechSynthesis.getVoices();
+            
+            let selectedVoice = voices.find(v => 
+              v.lang.includes('id') && 
+              (v.name.toLowerCase().includes('female') || 
+               v.name.toLowerCase().includes('woman'))
+            );
+            
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v => v.name === 'Google Bahasa Indonesia');
+            }
+            
+            if (!selectedVoice) {
+              selectedVoice = voices.find(v => v.lang.includes('id'));
+            }
+            
+            if (selectedVoice) {
+              utterance.voice = selectedVoice;
+            }
+            
+            utterance.rate = 1.2;
+            utterance.pitch = 1.3;
+            utterance.volume = 0.8;
+            
+            speechSynthesis.speak(utterance);
+          };
+          
+          if (speechSynthesis.getVoices().length > 0) {
+            setVoice();
+          } else {
+            speechSynthesis.onvoiceschanged = setVoice;
+          }
+
       }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "Unknown error"

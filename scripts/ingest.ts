@@ -10,7 +10,7 @@ import { join } from "path";
 
 // --- KONFIGURASI ---
 const OLLAMA_BASE_URL = "http://127.0.0.1:11434"; // <-- Port sudah diperbaiki
-const PDF_PATH = join(process.cwd(), "public", "Company_Profile_TVKU_2025_web.pdf");
+const PDF_PATH = join(process.cwd(), "public", "uploads", "Company_Profile_TVKU_2025_web.pdf");
 const JSON_PATH = join(process.cwd(), "public", "tentangTVKU.json");
 const COLLECTION_NAME = "tvku_docs";
 const CHROMA_URL = "http://localhost:8000";

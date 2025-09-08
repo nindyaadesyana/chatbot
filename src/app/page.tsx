@@ -3,7 +3,7 @@ import HomePage from '@/components/homePage'
 
 const Page = () => {
   return (
-    <div>
+    <div suppressHydrationWarning>
       <HomePage />
     </div>
   )

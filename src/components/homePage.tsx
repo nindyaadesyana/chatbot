@@ -8,6 +8,7 @@ import { Program } from "@/components/program";
 import Schedule from "@/components/schedule";
 import ClientHomePage from "@/components/clientHomePage";
 
+
 interface Inewsdata {
   id: number;
   judul: string;
@@ -23,20 +24,41 @@ interface Ikategori {
 }
 
 async function getNewsData(): Promise<Inewsdata[]> {
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  
-  if (!BASE_URL) {
-    console.error('NEXT_PUBLIC_API_BASE_URL is not defined');
-    return [];
-  }
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://apidev.tvku.tv/api';
 
   try {
-    const response = await fetch(`${BASE_URL}/berita`);
+    const response = await fetch(`${BASE_URL}/berita`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const jsonData = await response.json();
     return jsonData.data || [];
   } catch (error) {
     console.error('Failed to fetch news data:', error);
-    return [];
+    // Return fallback data
+    return [
+      {
+        id: 1,
+        judul: 'Berita TVKU Terbaru',
+        deskripsi: 'Informasi terbaru dari TVKU akan segera hadir. Pantau terus website dan media sosial TVKU untuk update berita terkini.',
+        waktu: new Date().toISOString(),
+        kategori: {
+          id_kategori: 1,
+          nama: 'Umum',
+          slug: 'umum'
+        },
+        cover: '/images/tvku-logo.png'
+      }
+    ];
   }
 }
 
@@ -78,6 +100,7 @@ export default async function HomePage() {
           )}
         </div>
         <Program />
+
       </div>
       <div>
         <div className="bg-white py-20 px-3">
