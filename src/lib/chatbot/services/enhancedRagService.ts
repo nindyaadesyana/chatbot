@@ -1,4 +1,5 @@
 import { ChatOllama } from "@langchain/ollama";
+import tentangTVKU from '../../../../public/tentangTVKU.json';
 
 const TVKU_OLLAMA_CHAT_URL = "http://127.0.0.1:11434";
 
@@ -36,7 +37,14 @@ export class EnhancedRAGService {
       
       Jawab dengan bahasa Indonesia formal yang sopan dan profesional:`);
       
-      return response.content || response;
+      // Handle different response types from Ollama
+      if (typeof response === 'string') {
+        return response;
+      }
+      if (response && typeof response === 'object' && 'content' in response) {
+        return String(response.content);
+      }
+      return String(response);
 
     } catch (error) {
       console.error("[Enhanced RAG] Error:", error);
@@ -89,39 +97,42 @@ export class EnhancedRAGService {
   }
 
   private static getRatecardTable(): string {
-    return `
-📺 **RATECARD TVKU 2025**
+    try {
+      const data = tentangTVKU;
+      
+      if (!data.rateCard || !Array.isArray(data.rateCard)) {
+        return 'Maaf, data ratecard tidak tersedia saat ini.';
+      }
 
-**TARIF IKLAN:**
+      let table = `
+📺 **RATECARD TVKU RESMI**
 
-🌟 **Spot Iklan Prime Time** - 30 detik
-   💰 Rp 2.500.000
+| **Jenis Layanan** | **Durasi** | **Harga** |
+|-------------------|------------|----------|
+`;
 
-📺 **Spot Iklan Regular** - 30 detik  
-   💰 Rp 1.500.000
+      data.rateCard.forEach((item: any) => {
+        table += `| ${item.acara} | ${item.durasi} | ${item.harga} |\n`;
+      });
 
-🎯 **Sponsorship Program** - Per episode
-   💰 Rp 5.000.000
-
-📝 **Running Text** - Per hari
-   💰 Rp 500.000
-
-🎪 **Backdrop Event** - Per hari
-   💰 Rp 1.000.000
-
----
-
-🎁 **PAKET BUNDLING:**
-• Paket Mingguan → Diskon 15%
-• Paket Bulanan → Diskon 25%  
-• Paket 3 Bulan → Diskon 35%
-
+      table += `
 📞 **HUBUNGI TIM SALES:**
-• WhatsApp: +6281228115941 (Bagus)
-• WhatsApp: +6281227241195 (Fitri)
+`;
+      
+      if (data.kontakKerjaSama && Array.isArray(data.kontakKerjaSama)) {
+        data.kontakKerjaSama.forEach((kontak: any) => {
+          table += `• ${kontak.nama}: ${kontak.telepon}\n`;
+        });
+      }
 
+      table += `
 ⚠️ *Harga dapat berubah sewaktu-waktu*
-💡 *Hubungi tim sales untuk penawaran terbaik!*
-    `;
+💡 *Hubungi tim sales untuk penawaran terbaik!*`;
+
+      return table;
+    } catch (error) {
+      console.error('Error loading ratecard:', error);
+      return 'Maaf, tidak dapat memuat data ratecard saat ini. Silakan hubungi tim sales langsung.';
+    }
   }
 }

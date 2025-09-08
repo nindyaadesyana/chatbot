@@ -12,6 +12,8 @@ import {
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import ReactMarkdown from "react-markdown"
+import { RatecardTable } from "@/components/RatecardTable"
+import tentangTVKU from '../../public/tentangTVKU.json'
 
 interface ChatMessage {
   sender: "user" | "ai"
@@ -202,12 +204,14 @@ const AIMessageContent = ({ message }: { message: string }) => {
     }
 
     if (isRateCardResponse(message)) {
-      const items = parseRateCard(message);
-      if (items.length > 0) {
+      // Use data from tentangTVKU.json instead of parsing
+      if (tentangTVKU.rateCard && Array.isArray(tentangTVKU.rateCard)) {
         return (
-          <div className="space-y-2">
-            <h3 className="font-bold text-gray-800">Rate Card TVKU</h3>
-            <RateCardTable items={items} />
+          <div className="space-y-4">
+            <RatecardTable 
+              items={tentangTVKU.rateCard} 
+              contacts={tentangTVKU.kontakKerjaSama}
+            />
           </div>
         );
       }
