@@ -7,7 +7,7 @@ import { ChromaClient } from "chromadb";
 import { Document } from "@langchain/core/documents";
 import { join } from "path";
 import { DataService } from "../src/lib/chatbot/services/dataService";
-import { TVKUService } from "../src/lib/chatbot/services/tvkuService";
+
 
 const OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const PDF_PATH = join(process.cwd(), "public", "uploads", "Company_Profile_TVKU_2025_web.pdf");
@@ -15,18 +15,17 @@ const JSON_PATH = join(process.cwd(), "public", "tentangTVKU.json");
 const COLLECTION_NAME = "tvku_docs";
 const CHROMA_URL = "http://localhost:8000";
 
+
 async function createDynamicDocuments(): Promise<Document[]> {
   const documents: Document[] = [];
   
   try {
     // Add news data
     console.log("   -> Mengambil data berita...");
-    const newsData = await DataService.getNews();
-    if (newsData && newsData.length > 0) {
+    const newsData = await DataService.getBerita();
+    if (newsData && newsData.trim()) {
       const newsDoc = new Document({
-        pageContent: `BERITA TVKU:\n${newsData.map(news => 
-          `Judul: ${news.title}\nKonten: ${news.content}\nTanggal: ${news.date}`
-        ).join('\n\n')}`,
+        pageContent: `BERITA TVKU:${newsData}`,
         metadata: { source: "dynamic_news", type: "news" }
       });
       documents.push(newsDoc);
@@ -34,12 +33,10 @@ async function createDynamicDocuments(): Promise<Document[]> {
 
     // Add program data
     console.log("   -> Mengambil data program...");
-    const programData = await TVKUService.getPrograms();
-    if (programData && programData.length > 0) {
+    const programData = await DataService.getProgramAcara();
+    if (programData && programData.trim()) {
       const programDoc = new Document({
-        pageContent: `PROGRAM TVKU:\n${programData.map(program => 
-          `Nama: ${program.name}\nDeskripsi: ${program.description}\nJadwal: ${program.schedule}`
-        ).join('\n\n')}`,
+        pageContent: `PROGRAM TVKU:${programData}`,
         metadata: { source: "dynamic_programs", type: "programs" }
       });
       documents.push(programDoc);
@@ -47,10 +44,10 @@ async function createDynamicDocuments(): Promise<Document[]> {
 
     // Add schedule data
     console.log("   -> Mengambil data jadwal...");
-    const scheduleData = await TVKUService.getSchedule();
-    if (scheduleData) {
+    const scheduleData = await DataService.getJadwalAcara();
+    if (scheduleData && scheduleData.trim()) {
       const scheduleDoc = new Document({
-        pageContent: `JADWAL TVKU:\n${JSON.stringify(scheduleData, null, 2)}`,
+        pageContent: `JADWAL TVKU:${scheduleData}`,
         metadata: { source: "dynamic_schedule", type: "schedule" }
       });
       documents.push(scheduleDoc);
@@ -104,7 +101,10 @@ async function run() {
 
     // 5. Clean old collection
     console.log("\n4. Membersihkan koleksi lama...");
-    const client = new ChromaClient({ path: CHROMA_URL });
+    const client = new ChromaClient({ 
+      host: "localhost",
+      port: 8000
+    });
     try {
       await client.deleteCollection({ name: COLLECTION_NAME });
       console.log("   -> Koleksi lama dihapus");

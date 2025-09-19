@@ -64,40 +64,84 @@ docker run -d -p 8000:8000 chromadb/chroma
 npm install
 ```
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
-### 1. Setup Environment
+### Prerequisites
+Pastikan sudah terinstall:
+- **Node.js** 18+
+- **Docker** 
+- **Ollama**
+
+### Setup Pertama Kali
+
+#### 1. Install Ollama & Models
 ```bash
-# Clone repository
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull required models
+ollama pull llama3
+ollama pull nomic-embed-text
+```
+
+#### 2. Clone & Install Dependencies
+```bash
 git clone <repository-url>
 cd chatbot
-
-# Install dependencies
 npm install
 ```
 
-### 2. Start Services
+#### 3. Start Services (Buka 4 Terminal)
+
+**Terminal 1 - Ollama:**
 ```bash
-# Terminal 1: Start Ollama
 ollama serve
-
-# Terminal 2: Start ChromaDB
-docker run -d -p 8000:8000 chromadb/chroma
-
-# Terminal 3: Start Next.js
-npm run dev
 ```
 
-### 3. Initialize RAG Data
+**Terminal 2 - ChromaDB:**
 ```bash
-# Ingest initial data
+docker run -d -p 8000:8000 chromadb/chroma
+```
+
+**Terminal 3 - Ingest Data (WAJIB untuk chatbot berfungsi):**
+```bash
 npm run ingest:enhanced
 ```
 
-### 4. Access Application
+**Terminal 4 - Start App:**
+```bash
+npm run dev
+```
+
+#### 4. Verifikasi Setup
+- ✅ **Ollama**: `ollama list` (harus ada llama3 & nomic-embed-text)
+- ✅ **ChromaDB**: http://localhost:8000
+- ✅ **App**: http://localhost:3000
+- ✅ **Chat**: Klik tombol chat di pojok kanan bawah
+
+### Menjalankan Setelah Setup Pertama
+
+Setiap kali mau pakai aplikasi, jalankan 3 service ini:
+
+```bash
+# Terminal 1
+ollama serve
+
+# Terminal 2 (atau gunakan container yang sudah ada)
+docker start <chromadb_container_id>
+# atau buat baru:
+docker run -d -p 8000:8000 chromadb/chroma
+
+# Terminal 3
+npm run dev
+```
+
+**Catatan**: Ingest hanya perlu dijalankan sekali, kecuali ada update data.
+
+### Akses Aplikasi
 - **Website**: http://localhost:3000
-- **Admin Panel**: http://localhost:3000/admin
-- **Chat**: Click floating chat button
+- **Admin Panel**: http://localhost:3000/admin (upload PDF)
+- **Chat**: Klik floating chat button di website
 
 ## 📁 Project Structure
 
@@ -363,17 +407,50 @@ npm run dev # See console logs
 
 **Ollama not responding**
 ```bash
-ollama serve
+# Cek models terinstall
+ollama list
+
+# Install ulang jika perlu
 ollama pull llama3
+ollama pull nomic-embed-text
+
+# Restart service
+ollama serve
 ```
 
 **ChromaDB connection failed**
 ```bash
+# Stop container lama
+docker stop $(docker ps -q --filter ancestor=chromadb/chroma)
+
+# Start baru
 docker run -d -p 8000:8000 chromadb/chroma
+
+# Cek status
+docker ps
+```
+
+**Chatbot tidak bisa jawab pertanyaan TVKU**
+```bash
+# Pastikan ingest sudah dijalankan
+npm run ingest:enhanced
+
+# Cek ChromaDB jalan
+curl http://localhost:8000/api/v1/collections
+```
+
+**Ingest gagal**
+```bash
+# Pastikan Ollama & ChromaDB jalan dulu
+ollama serve
+docker run -d -p 8000:8000 chromadb/chroma
+
+# Baru jalankan ingest
+npm run ingest:enhanced
 ```
 
 **Voice not working**
-- Pastikan browser support Web Speech API
+- Pastikan browser support Web Speech API (Chrome/Edge recommended)
 - Berikan permission microphone
 - Gunakan HTTPS untuk production
 
@@ -381,6 +458,19 @@ docker run -d -p 8000:8000 chromadb/chroma
 - Check file size (max recommended: 10MB)
 - Ensure `public/uploads/` directory exists
 - Check OCR processing logs
+
+### Cek Status Services
+```bash
+# Cek Ollama
+ollama list
+curl http://localhost:11434/api/tags
+
+# Cek ChromaDB
+curl http://localhost:8000/api/v1/collections
+
+# Cek Docker containers
+docker ps
+```
 
 ## 📝 License
 
