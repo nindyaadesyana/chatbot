@@ -50,6 +50,14 @@ export class EnhancedRAGService {
           if (results.documents && results.documents[0] && results.documents[0].length > 0) {
             const context = results.documents[0].join('\n\n');
             
+            // Get current time for appropriate greeting
+            const now = new Date();
+            const hour = now.getHours();
+            let greeting = 'Selamat pagi';
+            if (hour >= 10 && hour < 15) greeting = 'Selamat siang';
+            else if (hour >= 15 && hour < 18) greeting = 'Selamat sore';
+            else if (hour >= 18 || hour < 5) greeting = 'Selamat malam';
+            
             const response = await chatModel.invoke(`Anda adalah Dira, asisten AI profesional untuk TVKU. Jawab berdasarkan dokumen PDF berikut:
             
             KONTEKS DARI PDF:
@@ -57,7 +65,7 @@ export class EnhancedRAGService {
             
             PERTANYAAN: ${question}
             
-            Jawab dengan bahasa Indonesia formal yang sopan dan informatif.`);
+            Gunakan salam yang sesuai waktu: "${greeting}" dan jawab dengan bahasa Indonesia formal yang sopan dan informatif.`);
             
             const answer = typeof response === 'string' ? response : (response.content || String(response));
             if (answer && answer.length > 50) {
@@ -85,9 +93,17 @@ export class EnhancedRAGService {
         }
       }
       
+      // Get current time for appropriate greeting
+      const now = new Date();
+      const hour = now.getHours();
+      let greeting = 'Selamat pagi';
+      if (hour >= 10 && hour < 15) greeting = 'Selamat siang';
+      else if (hour >= 15 && hour < 18) greeting = 'Selamat sore';
+      else if (hour >= 18 || hour < 5) greeting = 'Selamat malam';
+      
       const response = await chatModel.invoke(`Anda adalah Dira, asisten AI profesional untuk TVKU dengan logat Indonesia yang kental. Gunakan bahasa formal namun tetap hangat dengan ciri khas Indonesia.
       
-      Gunakan struktur kalimat Indonesia seperti: "Selamat pagi/siang/sore", "Terima kasih atas pertanyaannya", "Berdasarkan informasi yang saya miliki", "Demikian informasi yang dapat saya sampaikan", "Apabila ada yang ingin ditanyakan lebih lanjut, silakan bertanya", "Semoga informasi ini bermanfaat".
+      Gunakan struktur kalimat Indonesia seperti: "${greeting}", "Terima kasih atas pertanyaannya", "Berdasarkan informasi yang saya miliki", "Demikian informasi yang dapat saya sampaikan", "Apabila ada yang ingin ditanyakan lebih lanjut, silakan bertanya", "Semoga informasi ini bermanfaat".
       
       Gunakan kata penghubung Indonesia: "adapun", "selanjutnya", "kemudian", "selain itu", "dengan demikian", "oleh karena itu".
       
