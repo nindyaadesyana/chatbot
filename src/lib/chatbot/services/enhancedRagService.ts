@@ -27,15 +27,45 @@ export class EnhancedRAGService {
         // 1. PRIORITY: API TVKU data available
         contextInfo = `Data real-time TVKU: ${dynamicContext}`;
       } else {
-        // 2. FALLBACK: Try RAG (PDF documents)
+        // 2. PRIORITY: Try RAG (PDF documents)
         try {
-          const { askWithRAG } = await import('./langchainService');
-          const ragResult = await askWithRAG(question);
-          if (ragResult && ragResult.length > 50 && !ragResult.includes('tidak menemukan informasi') && !ragResult.includes('kesalahan')) {
-            return ragResult; // Return RAG result directly
+          // Use direct ChromaDB query instead of langchain wrapper
+          const { ChromaClient } = await import('chromadb');
+          const { OllamaEmbeddings } = await import('@langchain/ollama');
+          
+          const client = new ChromaClient({ host: 'localhost', port: 8000 });
+          const collection = await client.getCollection({ name: 'tvku_docs' });
+          
+          const embeddings = new OllamaEmbeddings({
+            model: 'nomic-embed-text',
+            baseUrl: 'http://127.0.0.1:11434'
+          });
+          
+          const queryEmbedding = await embeddings.embedQuery(question);
+          const results = await collection.query({
+            queryEmbeddings: [queryEmbedding],
+            nResults: 3
+          });
+          
+          if (results.documents && results.documents[0] && results.documents[0].length > 0) {
+            const context = results.documents[0].join('\n\n');
+            
+            const response = await chatModel.invoke(`Anda adalah Dira, asisten AI profesional untuk TVKU. Jawab berdasarkan dokumen PDF berikut:
+            
+            KONTEKS DARI PDF:
+            ${context}
+            
+            PERTANYAAN: ${question}
+            
+            Jawab dengan bahasa Indonesia formal yang sopan dan informatif.`);
+            
+            const answer = typeof response === 'string' ? response : (response.content || String(response));
+            if (answer && answer.length > 50) {
+              return answer;
+            }
           }
         } catch (error) {
-          console.log('[Enhanced RAG] RAG fallback failed, using JSON fallback:', error.message);
+          console.log('[Enhanced RAG] Direct ChromaDB query failed:', error.message);
         }
         
         // 3. LAST RESORT: JSON fallback for specific info
@@ -57,7 +87,7 @@ export class EnhancedRAGService {
       
       const response = await chatModel.invoke(`Anda adalah Dira, asisten AI profesional untuk TVKU dengan logat Indonesia yang kental. Gunakan bahasa formal namun tetap hangat dengan ciri khas Indonesia.
       
-      Gunakan struktur kalimat Indonesia seperti: "Selamat pagi/siang/sore", "Terima kasih atas pertanyaannya", "Berdasarkan informasi yang saya miliki", "Demikian informasi yang dapat saya sampaikan", "Apabila ada yang ingin ditanyakan lebih lanjut", "Semoga informasi ini bermanfaat".
+      Gunakan struktur kalimat Indonesia seperti: "Selamat pagi/siang/sore", "Terima kasih atas pertanyaannya", "Berdasarkan informasi yang saya miliki", "Demikian informasi yang dapat saya sampaikan", "Apabila ada yang ingin ditanyakan lebih lanjut, silakan bertanya", "Semoga informasi ini bermanfaat".
       
       Gunakan kata penghubung Indonesia: "adapun", "selanjutnya", "kemudian", "selain itu", "dengan demikian", "oleh karena itu".
       
