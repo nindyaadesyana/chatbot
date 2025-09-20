@@ -20,18 +20,48 @@ export class EnhancedRAGService {
         return this.getRatecardTable();
       }
       
-      const basicInfo = `TVKU (Televisi Kampus) adalah stasiun televisi kampus yang dikelola oleh Universitas Dian Nuswantoro (UDINUS) di Semarang. 
-      TVKU beroperasi sebagai media pembelajaran dan penyiaran untuk civitas akademika UDINUS.
+      // Priority system: API -> RAG -> JSON
+      let contextInfo = '';
       
-      Informasi lebih detail: ${dynamicContext || 'Tidak ada data dinamis tersedia.'}`;
+      if (dynamicContext) {
+        // 1. PRIORITY: API TVKU data available
+        contextInfo = `Data real-time TVKU: ${dynamicContext}`;
+      } else {
+        // 2. FALLBACK: Try RAG (PDF documents)
+        try {
+          const { askWithRAG } = await import('./langchainService');
+          const ragResult = await askWithRAG(question);
+          if (ragResult && ragResult.length > 50 && !ragResult.includes('tidak menemukan informasi') && !ragResult.includes('kesalahan')) {
+            return ragResult; // Return RAG result directly
+          }
+        } catch (error) {
+          console.log('[Enhanced RAG] RAG fallback failed, using JSON fallback:', error.message);
+        }
+        
+        // 3. LAST RESORT: JSON fallback for specific info
+        const tentangTVKU = await import('../../../../public/tentangTVKU.json');
+        const jsonData = tentangTVKU.default;
+        
+        if (question.toLowerCase().includes('target') || question.toLowerCase().includes('pemirsa')) {
+          contextInfo = `Target Viewers: ${jsonData.targetViewers}`;
+        } else if (question.toLowerCase().includes('visi')) {
+          contextInfo = `Visi TVKU: ${jsonData.visi}`;
+        } else if (question.toLowerCase().includes('misi')) {
+          contextInfo = `Misi TVKU: ${jsonData.misi}`;
+        } else if (question.toLowerCase().includes('kontak') || question.toLowerCase().includes('sales')) {
+          contextInfo = `Kontak: ${JSON.stringify(jsonData.kontakKerjaSama)}`;
+        } else {
+          contextInfo = 'TVKU adalah stasiun televisi kampus Universitas Dian Nuswantoro di Semarang.';
+        }
+      }
       
-      const response = await chatModel.invoke(`Anda adalah Love, asisten AI profesional untuk TVKU dengan logat Indonesia yang kental. Gunakan bahasa formal namun tetap hangat dengan ciri khas Indonesia.
+      const response = await chatModel.invoke(`Anda adalah Dira, asisten AI profesional untuk TVKU dengan logat Indonesia yang kental. Gunakan bahasa formal namun tetap hangat dengan ciri khas Indonesia.
       
       Gunakan struktur kalimat Indonesia seperti: "Selamat pagi/siang/sore", "Terima kasih atas pertanyaannya", "Berdasarkan informasi yang saya miliki", "Demikian informasi yang dapat saya sampaikan", "Apabila ada yang ingin ditanyakan lebih lanjut", "Semoga informasi ini bermanfaat".
       
       Gunakan kata penghubung Indonesia: "adapun", "selanjutnya", "kemudian", "selain itu", "dengan demikian", "oleh karena itu".
       
-      Berdasarkan informasi: ${basicInfo}
+      Berdasarkan informasi: ${contextInfo}
       
       Pertanyaan: ${question}
       

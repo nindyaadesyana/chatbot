@@ -355,23 +355,87 @@ export function ChatButton() {
                               ttsText.includes('Aku Dira') ||
                               ttsText.includes('asisten virtual');
         
-        // Read all content but make it concise and natural for TTS
+        // Create structured TTS with opening and titles only
         if (!isIntroduction) {
-          // Clean up for TTS while keeping all important information
-          ttsText = ttsText
-            .replace(/\*\*/g, '') // Remove bold markdown
-            .replace(/\*/g, '')   // Remove italic markdown
-            .replace(/#{1,6}\s/g, '') // Remove headers
-            .replace(/\|[^\n]*\|/g, '') // Remove table rows
-            .replace(/[-=]{3,}/g, '') // Remove separators
-            .replace(/\{[^}]*\}/g, '') // Remove JSON objects
-            .replace(/\[[^\]]*\]/g, '') // Remove arrays
-            .replace(/\n{2,}/g, '. ') // Replace multiple newlines with period
-            .replace(/\n/g, '. ')     // Replace single newlines with period
-            .replace(/\s+/g, ' ')     // Clean multiple spaces
-            .replace(/\b(BERITA|PROGRAM|JADWAL)\s*(HARI INI|TERAKHIR|TVKU)?:?\s*/gi, '') // Remove headers
-            .replace(/created_at|updated_at|id_\w+/gi, '') // Remove technical terms
-            .trim();
+          // Extract titles/headlines from content
+          const extractTitles = (text: string) => {
+            // Clean text first
+            const cleanText = text
+              .replace(/\*\*/g, '')
+              .replace(/\*/g, '')
+              .replace(/#{1,6}\s/g, '')
+              .replace(/\{[^}]*\}/g, '')
+              .replace(/\[[^\]]*\]/g, '')
+              .trim();
+            
+            // Extract titles from JSON data or numbered lists
+            const titles = [];
+            
+            // Try to extract from JSON structure
+            const jsonMatches = cleanText.match(/"(judul|title|nama|acara)"\s*:\s*"([^"]+)"/gi);
+            if (jsonMatches) {
+              jsonMatches.forEach(match => {
+                const titleMatch = match.match(/"([^"]+)"\s*$/i);
+                if (titleMatch) titles.push(titleMatch[1]);
+              });
+            }
+            
+            // Extract from numbered lists
+            const numberedMatches = cleanText.match(/\d+\.\s*([^\n.]+)/g);
+            if (numberedMatches) {
+              numberedMatches.forEach(match => {
+                const title = match.replace(/\d+\.\s*/, '').trim();
+                if (title.length > 5) titles.push(title);
+              });
+            }
+            
+            // Extract from bullet points
+            const bulletMatches = cleanText.match(/[-•]\s*([^\n.]+)/g);
+            if (bulletMatches) {
+              bulletMatches.forEach(match => {
+                const title = match.replace(/[-•]\s*/, '').trim();
+                if (title.length > 5) titles.push(title);
+              });
+            }
+            
+            return titles.slice(0, 5); // Max 5 titles
+          };
+          
+          const titles = extractTitles(ttsText);
+          
+          if (titles.length > 0) {
+            // Create structured response with opening
+            let opening = '';
+            if (ttsText.toLowerCase().includes('berita')) {
+              opening = 'Berikut berita terbaru TVKU: ';
+            } else if (ttsText.toLowerCase().includes('program')) {
+              opening = 'Berikut program acara TVKU: ';
+            } else if (ttsText.toLowerCase().includes('jadwal')) {
+              opening = 'Berikut jadwal acara TVKU: ';
+            } else if (ttsText.toLowerCase().includes('ratecard')) {
+              opening = 'Berikut layanan TVKU: ';
+            } else {
+              opening = 'Berikut informasi TVKU: ';
+            }
+            
+            // Join titles with proper conjunction
+            let titlesList = '';
+            if (titles.length === 1) {
+              titlesList = titles[0];
+            } else if (titles.length === 2) {
+              titlesList = titles.join(' dan ');
+            } else {
+              titlesList = titles.slice(0, -1).join(', ') + ', dan ' + titles[titles.length - 1];
+            }
+            
+            ttsText = opening + titlesList + '. Untuk detail lengkap dapat dilihat di atas.';
+          } else {
+            // Fallback: use first sentence + closing
+            const sentences = ttsText.split(/[.!?]/).filter(s => s.trim().length > 10);
+            if (sentences.length > 0) {
+              ttsText = sentences[0].trim() + '. Untuk detail lengkap dapat dilihat di atas.';
+            }
+          }
         }
         
         const utterance = new SpeechSynthesisUtterance(ttsText);

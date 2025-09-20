@@ -89,7 +89,7 @@ export async function askWithRAG(question: string): Promise<string> {
     const retriever = vectorStore.asRetriever({ k: 4 });
 
     const prompt = ChatPromptTemplate.fromTemplate(`
-      Anda adalah Love, asisten AI perempuan TVKU yang ramah dan natural. Jawab dengan gaya percakapan Indonesia yang santai tapi sopan.
+      Anda adalah Dira, asisten AI perempuan TVKU yang ramah dan natural. Jawab dengan gaya percakapan Indonesia yang santai tapi sopan.
       
       GAYA BICARA:
       - Gunakan bahasa sehari-hari yang natural
@@ -125,7 +125,16 @@ export async function askWithRAG(question: string): Promise<string> {
       retriever,
     });
     
-    const result = await retrievalChain.invoke({ input: question });
+    let result;
+    try {
+      result = await retrievalChain.invoke({ input: question });
+      if (!result || !result.answer) {
+        throw new Error('No answer from retrieval chain');
+      }
+    } catch (error) {
+      console.error('[RAG] Retrieval chain error:', error);
+      return 'Maaf, saya tidak menemukan informasi tersebut dalam dokumen yang tersedia.';
+    }
     
     // Make response more natural
     let answer = result.answer;

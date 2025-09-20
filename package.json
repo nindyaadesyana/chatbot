@@ -51,7 +51,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.12",
     "tailwindcss-animate": "1.0.7",
-    "tesseract.js": "^5.0.5",
+    "tesseract.js": "^5.1.1",
     "tsx": "^4.20.3"
   },
   "devDependencies": {
