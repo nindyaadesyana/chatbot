@@ -44,7 +44,7 @@ export class EnhancedRAGService {
           const queryEmbedding = await embeddings.embedQuery(question);
           const results = await collection.query({
             queryEmbeddings: [queryEmbedding],
-            nResults: 3
+            nResults: 5
           });
           
           if (results.documents && results.documents[0] && results.documents[0].length > 0) {
