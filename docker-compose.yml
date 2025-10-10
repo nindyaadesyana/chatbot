@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: tvku-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - CHROMA_LOG_LEVEL=INFO
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  auto-ingest:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - NODE_ENV=development
+    command: >
+      sh -c "
+        echo '🔄 Waiting for ChromaDB to be ready...'
+        while ! wget -q --spider http://chromadb:8000/api/v1/heartbeat; do
+          echo '⏳ ChromaDB not ready yet, waiting 5s...'
+          sleep 5
+        done
+        echo '✅ ChromaDB is ready!'
+        echo '📥 Starting data ingestion...'
+        npm install --silent
+        npm run ingest:enhanced
+        echo '🎉 INGEST COMPLETED! Chatbot is ready to use.'
+        echo '💡 You can now run: npm run dev'
+        tail -f /dev/null
+      "
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    profiles:
+      - ingest
+
+volumes:
+  chromadb_data:
+    driver: local
