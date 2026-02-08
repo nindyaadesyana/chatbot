@@ -26,12 +26,15 @@ export const RAG_CONFIG = {
     collectionName: "tvku_docs"
   },
 
-  // Retrieval Configuration
+  // Advanced Retrieval Configuration
   retrieval: {
-    maxResults: 8,          // Number of documents to retrieve
-    relevanceThreshold: 0.7, // Similarity threshold (lower = more similar)
-    topDocuments: 4,        // Final number of documents to use
-    prioritizePdf: true     // Give PDF content higher priority
+    maxResults: 12,         // Increased for multi-query retrieval
+    relevanceThreshold: 0.6, // Stricter threshold for better precision
+    topDocuments: 5,        // More documents for richer context
+    prioritizePdf: true,    // Give PDF content higher priority
+    useMMR: true,          // Enable Maximal Marginal Relevance
+    diversityLambda: 0.7,  // Balance between relevance and diversity
+    confidenceThreshold: 0.8 // Minimum confidence for factual validation
   },
 
   // Text Splitting Configuration
@@ -56,7 +59,7 @@ export const RAG_CONFIG = {
     news: ['berita', 'news', 'hari ini', 'terbaru', 'terkini', 'update', 'informasi', 'kabar'],
     programs: ['program', 'acara', 'tayangan', 'siaran', 'show'],
     schedule: ['jadwal', 'schedule', 'waktu', 'jam', 'kapan'],
-    ratecard: ['ratecard', 'rate card', 'tarif iklan', 'harga iklan', 'biaya iklan']
+    ratecard: ['ratecard', 'rate card', 'tarif iklan', 'harga iklan', 'biaya iklan', 'tarif', 'biaya']
   },
 
   // API Configuration

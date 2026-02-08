@@ -8,12 +8,15 @@ export class ChatbotService {
       throw new Error('Prompt tidak valid');
     }
 
-    // 2. Handle greetings and thanks
+    // 2. Handle greetings, thanks, and off-topic
     if (ResponseHandler.isGreeting(prompt)) {
       return ResponseHandler.getGreetingResponse();
     }
     if (ResponseHandler.isThankYou(prompt)) {
       return ResponseHandler.getThankYouResponse();
+    }
+    if (ResponseHandler.isOffTopic(prompt)) {
+      return ResponseHandler.getOffTopicResponse();
     }
 
     // 3. Use Enhanced RAG for all queries
